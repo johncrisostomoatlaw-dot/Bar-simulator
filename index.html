@@ -1,0 +1,458 @@
+<title>Philippine Bar Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one centred examination desk; subject board → answer booklet → examiner's report */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --ink: #17202d; --muted: #5a6577; --rule: #d6dce5;
+  --accent: #7b1e2b; --accent-ink: #ffffff; --gold: #9c7a22; --line: #e3e8ef;
+  --good: #1f7a4d; --warn: #a3620a; --bad: #b42323; --soft: #f5f7fa;
+  --f-display: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e131b; --surface: #161d28; --ink: #e5e9f0; --muted: #98a3b5; --rule: #2a3444;
+  --accent: #d86474; --accent-ink: #1a0f12; --gold: #d4b25a; --line: #222b39;
+  --good: #4cc08a; --warn: #e3a344; --bad: #f07272; --soft: #1b2331; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e131b; --surface: #161d28; --ink: #e5e9f0; --muted: #98a3b5; --rule: #2a3444;
+  --accent: #d86474; --accent-ink: #1a0f12; --gold: #d4b25a; --line: #222b39;
+  --good: #4cc08a; --warn: #e3a344; --bad: #f07272; --soft: #1b2331; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px }
+.wrap { max-width: 960px; margin: 0 auto }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; line-height: 1.25 }
+h1 { font-size: clamp(1.7rem, 4vw, 2.3rem) }
+h2 { font-size: 1.35rem }
+h3 { font-size: 1.05rem }
+p { margin: 0 }
+.label { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); font-weight: 600 }
+.muted { color: var(--muted) }
+button, select { font: inherit }
+button { cursor: pointer; border-radius: 6px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); padding: 8px 14px; font-weight: 600 }
+button:hover { border-color: var(--muted) }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+button.primary:hover { filter: brightness(1.08) }
+button:disabled { opacity: .5; cursor: not-allowed }
+button:focus-visible, select:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px }
+select, input[type=number] { background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px }
+
+/* Masthead */
+.mast { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; padding-block: 28px 20px; border-bottom: 3px double var(--rule); margin-bottom: 24px }
+.mast .seal { font-family: var(--f-display); font-style: italic; color: var(--gold) }
+
+/* Board */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px }
+.subj { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.subj .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline }
+.weight { font-family: var(--f-mono); font-weight: 700; color: var(--accent); font-size: 1.1rem }
+.subj .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; flex-wrap: wrap }
+.pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 9px; border-radius: 99px; border: 1px solid currentColor; font-variant-numeric: tabular-nums }
+.pill.good { color: var(--good) } .pill.bad { color: var(--bad) } .pill.idle { color: var(--muted) } .pill.warn { color: var(--warn) }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center }
+.settings { display: flex; flex-wrap: wrap; gap: 18px; align-items: end; margin-bottom: 22px }
+.settings label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; font-weight: 600 }
+.settings .check { flex-direction: row; align-items: center; gap: 8px; padding-bottom: 8px }
+.card-score { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; margin-bottom: 24px }
+.big { font-family: var(--f-mono); font-size: 2.6rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1 }
+.bar { height: 8px; background: var(--line); border-radius: 99px; position: relative; overflow: hidden }
+.bar > i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 99px }
+.bar > b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--gold); left: 75% }
+
+/* Exam */
+.examhead { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px }
+.timer { font-family: var(--f-mono); font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em }
+.timer.low { color: var(--bad) }
+.nav { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 16px }
+.nav button { width: 40px; padding: 6px 0; font-family: var(--f-mono); position: relative }
+.nav button.cur { border-color: var(--accent); color: var(--accent) }
+.nav button.done::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--good) }
+.nav button.flag { border-style: dashed; border-color: var(--gold) }
+.qtext { font-family: var(--f-display); font-size: 1.08rem; line-height: 1.7; max-width: 68ch; white-space: pre-line }
+.booklet { width: 100%; min-height: 340px; resize: vertical; border: 1px solid var(--rule); border-radius: 6px; padding: 6px 14px; color: var(--ink);
+  font: 16px/32px var(--f-display); background-color: var(--surface);
+  background-image: linear-gradient(var(--surface) 0 31px, var(--line) 31px 32px); background-size: 100% 32px; background-attachment: local; background-position: 0 6px }
+.meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums }
+.warnbox { border: 1px solid var(--warn); color: var(--warn); border-radius: 6px; padding: 8px 12px; font-size: .9rem }
+.confirm { border: 1px solid var(--accent); border-radius: 8px; padding: 14px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between }
+
+/* Report */
+.qres { border-top: 1px solid var(--rule); padding-block: 18px; display: flex; flex-direction: column; gap: 10px }
+.qres .hd { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap }
+.answer { background: var(--soft); border-radius: 6px; padding: 10px 14px; font-family: var(--f-display); white-space: pre-wrap; max-height: 260px; overflow: auto; min-width: 0 }
+details { border: 1px solid var(--rule); border-radius: 6px; padding: 8px 12px }
+summary { cursor: pointer; font-weight: 600 }
+.key { font-size: .93rem; margin-top: 6px; white-space: pre-line }
+.grade { border-left: 3px solid var(--gold); padding: 4px 0 4px 14px; display: flex; flex-direction: column; gap: 6px; white-space: pre-wrap }
+.grade ul { margin: 0; padding-left: 20px }
+.score-in { width: 80px }
+.small { font-size: .85rem }
+@media (prefers-reduced-motion: no-preference) { .bar > i { transition: width .5s ease } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+const SUBJECTS = [
+  { id: "pol", name: "Political and Public International Law", weight: 15, sched: "Day 1 · Morning" },
+  { id: "comtax", name: "Commercial and Taxation Laws", weight: 20, sched: "Day 1 · Afternoon" },
+  { id: "civ", name: "Civil Law", weight: 20, sched: "Day 2 · Morning" },
+  { id: "lab", name: "Labor Law and Social Legislation", weight: 10, sched: "Day 2 · Afternoon" },
+  { id: "crim", name: "Criminal Law", weight: 10, sched: "Day 3 · Morning" },
+  { id: "rem", name: "Remedial Law, Legal and Judicial Ethics, with Practical Exercises", weight: 25, sched: "Day 3 · Afternoon" },
+];
+
+// Original practice questions. "key" is the examiner's note: the issue and the legal basis an answer should reach.
+const BANK = {
+  pol: [
+    { pts: 25, q: "Police set up a night checkpoint along a national highway in Batangas. They flag down a closed van driven by Ramon and shine a flashlight inside; they see only sacks. Acting on what one officer later calls \"a hunch,\" they order Ramon to open the sacks and find ten kilos of marijuana.\n\nRamon moves to suppress the evidence. Rule on the motion.",
+      key: "Checkpoints are not illegal per se (Valmonte v. De Villa, G.R. No. 83988, 1989), but the search must be limited to a visual inspection. An extensive search of a vehicle at a checkpoint requires probable cause (Caballes v. Court of Appeals, G.R. No. 136292, 2002). A hunch is not probable cause, and no other exception to the warrant requirement applies. The marijuana is inadmissible under Art. III, Sec. 3(2) of the Constitution. Motion granted." },
+    { pts: 25, q: "Samahan ng Maliliit na Negosyante, a regional political party with no sectoral affiliation, applies for registration under the party-list system. The COMELEC denies the application, citing Ang Bagong Bayani-OFW v. COMELEC, on the ground that only marginalized and underrepresented sectors may take part.\n\nIs the COMELEC correct?",
+      key: "No. Atong Paglaum, Inc. v. COMELEC (G.R. No. 203766, 2013) abandoned the Ang Bagong Bayani reading. National and regional parties or organizations need not represent a marginalized and underrepresented sector (Art. VI, Sec. 5(1)-(2); R.A. No. 7941). Only sectoral parties must represent marginalized and underrepresented sectors or those lacking well-defined political constituencies." },
+    { pts: 25, q: "The President issues an executive order reorganizing a regulatory agency. Atty. Cruz, suing as a citizen and taxpayer, files a petition for certiorari and prohibition assailing the order. The Solicitor General moves to dismiss for lack of legal standing, pointing out that the order involves no disbursement of public funds.\n\nResolve the motion.",
+      key: "Requisites of judicial review: actual case or controversy, locus standi, question raised at the earliest opportunity, and the constitutional question as the lis mota (Francisco v. House of Representatives, G.R. No. 160261, 2003). A taxpayer suit requires an illegal disbursement of public funds; without it, taxpayer standing fails. The Court may still relax standing when the issue is of transcendental importance (Kilosbayan v. Guingona, 1994; David v. Macapagal-Arroyo, G.R. No. 171396, 2006), but the petitioner must show why. A good answer states the default rule, then reasons whether the exception fits these facts." },
+    { pts: 25, q: "The Ambassador of State X buys a beach house in La Union in his own name for weekend use. A Filipino neighbor sues him before the RTC to recover a strip of land that the house encroaches on. The Ambassador moves to dismiss, invoking diplomatic immunity.\n\nRule on the motion.",
+      key: "Deny. Under Art. 31(1)(a) of the Vienna Convention on Diplomatic Relations, a diplomatic agent is immune from civil jurisdiction except in a real action relating to private immovable property in the receiving State, unless he holds it on behalf of the sending State for the purposes of the mission. The beach house is privately held for personal use, so the exception applies." },
+  ],
+  comtax: [
+    { pts: 25, q: "Ana signed a check, leaving the payee and amount blank, and kept it in her desk drawer. Ben, her houseguest, stole it, wrote in his own name and ₱500,000, and negotiated it to Carla, who gave full value in good faith. The drawee bank dishonored the check.\n\nCan Carla recover from Ana? Explain.",
+      key: "No. Sec. 15 of the Negotiable Instruments Law: an incomplete instrument that has not been delivered is not a valid contract in the hands of any holder, as against a person whose signature was placed on it before delivery. This is a real defense, available even against a holder in due course. Distinguish Sec. 14 (incomplete but delivered: prima facie authority to fill up the blanks). Carla's recourse is against Ben." },
+    { pts: 25, q: "Answer each briefly under the Revised Corporation Code:\n(a) A universal bank wishes to organize a subsidiary bank as a One Person Corporation.\n(b) A certified public accountant wishes to organize a One Person Corporation to render accounting services.\n(c) A foreign national residing in Makati wishes to be the single stockholder of a One Person Corporation engaged in software development.",
+      key: "Sec. 116, R.A. No. 11232. (a) Not allowed: banks and quasi-banks, preneed, trust, insurance, public and publicly-listed companies, and non-chartered GOCCs may not incorporate as an OPC. Also, only a natural person, trust, or estate may form an OPC. (b) Not allowed: a natural person licensed to exercise a profession may not organize an OPC to exercise that profession, except as allowed by special law. (c) Allowed: a natural person of legal age may form an OPC, subject to the nationality limits of the Constitution and the Foreign Investments Act and its minimum capital rules." },
+    { pts: 25, q: "X Corp. filed its income tax return for calendar year 2021 on April 15, 2022. On July 1, 2025, the BIR issued a Final Assessment Notice for deficiency income tax.\n(a) Has the government's right to assess prescribed?\n(b) Would your answer change if the BIR proves that X Corp. underdeclared its sales by 40%?",
+      key: "(a) Yes. Sec. 203, NIRC: assessment within three years from the last day prescribed for filing the return (April 15, 2022), so until April 15, 2025. The July 1, 2025 assessment is late. (b) Yes. Sec. 222(a): a false or fraudulent return with intent to evade tax may be assessed within ten years after discovery. Under Sec. 248(B), an underdeclaration of sales exceeding 30% of what was declared is prima facie evidence of a false or fraudulent return. The assessment is timely." },
+    { pts: 25, q: "Y Corp. received a Final Assessment Notice on March 1. It filed a request for reinvestigation on March 20 and submitted all its supporting documents on May 15. The Commissioner has not acted on the protest.\n\nWhat remedies does Y Corp. have, and within what periods?",
+      key: "Sec. 228, NIRC: protest within 30 days from receipt (timely); documents within 60 days from filing of the protest (timely). The Commissioner has 180 days from submission of documents to decide (to November 11). On inaction, the taxpayer may either (1) appeal to the CTA within 30 days after the 180-day period lapses, or (2) await the Commissioner's final decision and appeal within 30 days from receipt (Lascona Land Co. v. CIR, G.R. No. 171251, 2012; Sec. 7, R.A. No. 9282). The options are mutually exclusive." },
+  ],
+  civ: [
+    { pts: 25, q: "Rosa files a petition to declare her marriage to Carlo void under Art. 36 of the Family Code. She presents her own testimony and that of Carlo's siblings, describing his chronic abandonment, refusal to support, and violent outbursts dating back to his teens. She presents no psychologist or psychiatrist. The RTC dismisses the petition for lack of expert testimony.\n\nWas the dismissal correct?",
+      key: "No. Tan-Andal v. Andal (G.R. No. 196359, 2021): psychological incapacity is a legal, not a medical, concept; it need not be a mental disorder or personality disorder, and expert opinion is not required. It must be proved by clear and convincing evidence of a durable personality structure existing at the time of the marriage (juridical antecedence), incurable in the legal sense, and grave. Lay witnesses who knew the spouse before the marriage may establish it." },
+    { pts: 25, q: "On January 5, Oscar sold his titled lot to Pia, who took possession at once but did not register the sale. On February 10, Oscar sold the same lot to Quino, who knew of the earlier sale. Quino registered his deed on February 12.\n\nWho has the better right to the lot?",
+      key: "Pia. Art. 1544, Civil Code: for immovables, ownership goes to the buyer who first registers in good faith; failing that, to the first possessor in good faith; failing that, to the one with the oldest title in good faith. Quino's knowledge of the prior sale makes his registration one in bad faith, which confers no preference (Uraca v. Court of Appeals, G.R. No. 115158, 1997). Pia, the first possessor in good faith, prevails." },
+    { pts: 25, q: "Fred, a widower survived by two legitimate children, Gina and Hugo, left a notarial will stating: \"I institute my friend Ivan as my sole heir. I give my car to my daughter Gina.\" Hugo is not mentioned in the will and received nothing from Fred during his lifetime.\n\nHow should Fred's estate be distributed?",
+      key: "Hugo, a compulsory heir in the direct line, was totally omitted: preterition (Art. 854). Preterition annuls the institution of Ivan entirely, but devises and legacies remain valid insofar as they are not inofficious. Gina is not preterited because she received a legacy. The legitime of two legitimate children is one-half of the estate (Art. 888); the car is charged to the free portion. The rest passes by intestacy to Gina and Hugo equally (Nuguid v. Nuguid, G.R. No. L-23445, 1966; Acain v. IAC, G.R. No. 72706, 1987)." },
+    { pts: 25, q: "A delivery truck owned by SpeedCo and driven by its employee Jun hit a pedestrian. In the civil action under Art. 2176, SpeedCo proves that it hired Jun only after a driving test and a background check. It offers no evidence on how it supervised Jun after hiring.\n\nIs SpeedCo liable?",
+      key: "Yes. Art. 2180, Civil Code: the employer's liability for its employee's quasi-delict is direct and primary, based on a presumption of negligence in selection or supervision. To escape liability the employer must prove the diligence of a good father of a family in both selection and supervision (Metro Manila Transit Corp. v. Court of Appeals, G.R. No. 104408, 1993). Proof of careful selection alone is not enough. SpeedCo may seek reimbursement from Jun (Art. 2181)." },
+  ],
+  lab: [
+    { pts: 35, q: "The Labor Arbiter found that Lito was illegally dismissed and ordered his reinstatement with full backwages. The employer appealed to the NLRC and refused to readmit Lito while the appeal was pending.\n(a) What reliefs is an illegally dismissed employee entitled to?\n(b) Was the employer justified in refusing to reinstate Lito pending appeal?",
+      key: "(a) Art. 294, Labor Code: reinstatement without loss of seniority rights and other privileges, and full backwages inclusive of allowances and other benefits, from the time compensation was withheld up to actual reinstatement. Separation pay may replace reinstatement where it is no longer viable, as when relations are strained. (b) No. Art. 229: the reinstatement aspect of the Arbiter's decision is immediately executory even pending appeal. The employer must admit the employee back to work or reinstate him in the payroll, at its option; posting a bond does not stay it." },
+    { pts: 35, q: "Manpower Inc. supplies packers to BigMart. Manpower has no equipment, office tools, or capital of its own beyond a small office. The packers work inside BigMart's warehouse, use BigMart's machines, and take orders from BigMart's supervisors. Their work is necessary to BigMart's business.\n\nWho is the employer of the packers? What is the liability for their unpaid wages?",
+      key: "This is labor-only contracting, prohibited under Art. 106 of the Labor Code and DOLE Department Order No. 174, Series of 2017: the contractor lacks substantial capital or investment, the workers perform activities directly related to the principal's main business, and/or the contractor does not exercise control. BigMart is deemed the employer, and Manpower is treated as its agent. The principal and the labor-only contractor are solidarily liable for the workers' claims." },
+    { pts: 30, q: "A security agency lost a client and placed guard Nestor on \"floating status.\" Seven months later he still had no new post and was not paid. He filed a complaint for constructive dismissal.\n\nWill his complaint prosper?",
+      key: "Yes. Placing a guard on floating status is a valid exercise of management prerogative, but by analogy to Art. 301 of the Labor Code (bona fide suspension of operations), it may not exceed six months. Beyond that period without reassignment, the employee is deemed constructively dismissed (Exocet Security and Allied Services Corp. v. Serrano, G.R. No. 198538, 2014). Nestor is entitled to the reliefs for illegal dismissal." },
+  ],
+  crim: [
+    { pts: 35, q: "During a quarrel, Arturo punched Bert in the face and ran away. Bert chased Arturo for about fifty meters, caught up with him, and stabbed him to death.\n\nBert pleads self-defense. Will the plea prosper? What crime did he commit?",
+      key: "No. Art. 11(1), RPC: self-defense requires (1) unlawful aggression, (2) reasonable necessity of the means employed to prevent or repel it, and (3) lack of sufficient provocation by the defender. Unlawful aggression is the indispensable element, and it must be continuing when the defender acts. Once Arturo fled, the aggression ceased; Bert's pursuit and stabbing was retaliation, not defense. Bert is liable for homicide (Art. 249). Consider whether a mitigating circumstance such as immediate vindication of a grave offense or passion and obfuscation (Art. 13(5)-(6)) applies." },
+    { pts: 35, q: "A, B, and C agreed to rob a pawnshop. A and B waited in the getaway car while C went inside. When the security guard resisted, C shot and killed him. A and B neither knew C would kill anyone nor did anything to stop it.\n\nWhat crime was committed, and who is liable?",
+      key: "Robbery with homicide, a special complex crime under Art. 294(1), RPC: homicide committed by reason or on the occasion of robbery. The intent to rob must precede the killing. Under the conspiracy (Art. 8), all who take part as principals in the robbery are also liable as principals of robbery with homicide, even if they did not take part in the killing, unless they show that they tried to prevent it (People v. Ebet, G.R. No. 181635, 2010). A, B, and C are all liable." },
+    { pts: 30, q: "Dina issued a postdated check to Eric in payment of a debt. The check bounced for insufficient funds. Without sending Dina a written notice of dishonor, Eric filed a complaint for violation of B.P. Blg. 22, arguing that Dina knew her account was nearly empty.\n\nWill the prosecution prosper?",
+      key: "No. Elements: (1) making, drawing, and issuing a check for account or value; (2) knowledge of insufficient funds at the time of issue; (3) dishonor. Under Sec. 2, knowledge is presumed only if the drawer received a notice of dishonor and failed to pay or arrange payment within five banking days. A written notice actually received is indispensable; without it the presumption does not arise (Domagsang v. Court of Appeals, G.R. No. 139292, 2000; Dico v. Court of Appeals, G.R. No. 141669, 2005)." },
+  ],
+  rem: [
+    { pts: 20, q: "On June 2, Atty. Reyes received an RTC order denying his client's motion to dismiss. Without filing a motion for reconsideration, he filed a petition for certiorari under Rule 65 with the Court of Appeals on August 10.\n\nIdentify and resolve the procedural issues.",
+      key: "(1) Timeliness: Sec. 4, Rule 65 requires filing within 60 days from notice of the order, which here fell on August 1. The petition is late. (2) A motion for reconsideration is generally a condition before certiorari, subject to recognized exceptions (patent nullity, urgency, purely legal question, among others). (3) An order denying a motion to dismiss is interlocutory; the ordinary remedy is to answer and raise the grounds as affirmative defenses, then appeal from the final judgment. Certiorari lies only for grave abuse of discretion amounting to lack or excess of jurisdiction." },
+    { pts: 20, q: "In a collection suit against Delta Corp., the sheriff served summons by handing it to the receptionist at Delta's main office. Delta did not file an answer and was declared in default.\n\nDid the court acquire jurisdiction over Delta? What may Delta do?",
+      key: "No. Sec. 12, Rule 14 (2019 Amended Rules): summons on a domestic juridical entity is served on its president, managing partner, general manager, corporate secretary, treasurer, or in-house counsel, wherever found, or, in their absence or unavailability, on their secretaries. Service on a receptionist is invalid, so the court did not acquire jurisdiction over Delta unless it voluntarily appeared (Sec. 23, Rule 14). Delta may move to set aside the order of default and raise lack of jurisdiction over its person." },
+    { pts: 20, q: "Victor was stabbed. In the hospital, gasping and bleeding heavily, he told his brother: \"I don't think I'll make it. It was Pedro who stabbed me.\" Victor died two hours later.\n\nIs the brother's testimony on Victor's statement admissible against Pedro in the murder case?",
+      key: "Yes, as a dying declaration under Sec. 38, Rule 130 (2019 Amended Rules on Evidence): (1) the declaration concerns the cause and surrounding circumstances of the declarant's death; (2) it was made under consciousness of impending death; (3) the declarant was competent as a witness; (4) it is offered in a case where the declarant's death is the subject of inquiry. It may also be admitted as part of the res gestae (Sec. 44, Rule 130), being a spontaneous statement made soon after a startling occurrence." },
+    { pts: 20, q: "Atty. Lim represented Spouses Tan in buying a lot from Mr. Uy and drafted the deed of sale. Two years later, Mr. Uy's company engages Atty. Lim to file an action to annul that same sale.\n\nMay Atty. Lim accept the engagement? Explain.",
+      key: "No, absent written informed consent of the former clients after full disclosure. Under the Code of Professional Responsibility and Accountability (A.M. No. 22-09-01-SC, Canon III on Fidelity), a lawyer shall not represent conflicting interests, and the duty of confidentiality survives the end of the engagement. The test is whether the new matter is the same as or substantially related to the former one, or whether the lawyer would be required to attack the very transaction he handled for the former client (Hornilla v. Salunat, A.C. No. 5804, 2003). Annulling the deed he drafted is a direct conflict." },
+    { pts: 20, q: "Practical exercise. Liza lent Marco ₱1,800,000, payable in one year. Marco has not paid despite written demand. Liza also seeks 6% legal interest and ₱100,000 in attorney's fees.\n(a) Which court has jurisdiction? Is the case covered by the Rules on Small Claims?\n(b) Draft the jurisdictional allegations and the prayer of the complaint.",
+      key: "(a) The first-level court (MeTC/MTC/MTCC). Under B.P. Blg. 129 as amended by R.A. No. 11576, first-level courts have exclusive original jurisdiction over civil actions where the demand does not exceed ₱2,000,000, exclusive of interest, damages, attorney's fees, litigation expenses, and costs. Not covered by small claims, whose ceiling is ₱1,000,000 (A.M. No. 08-8-7-SC, as amended). (b) The draft should allege the parties' capacity and residences, the loan, maturity, demand and non-payment, the amount of the principal demand, and pray for the principal, legal interest from demand (Nacar v. Gallery Frames, G.R. No. 189871, 2013), attorney's fees, and costs." },
+  ],
+};
+
+const DURATIONS = [ [240, "4 hours (actual Bar)"], [120, "2 hours"], [60, "1 hour"], [30, "30 minutes"], [15, "15 minutes"] ];
+const STORE = "bar-sim-v1";
+const PASS = 75;
+
+let S = load() || { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null };
+let tick = null, grader = null, confirmSubmit = false;
+
+function load() { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } }
+function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch {} }
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const subj = id => SUBJECTS.find(s => s.id === id);
+const words = t => (t.trim().match(/\S+/g) || []).length;
+const $ = sel => document.querySelector(sel);
+const app = $("#app");
+
+function weighted() {
+  const done = SUBJECTS.filter(s => S.scores[s.id] != null);
+  if (!done.length) return null;
+  const w = done.reduce((a, s) => a + s.weight, 0);
+  return { avg: done.reduce((a, s) => a + s.weight * S.scores[s.id], 0) / w, done: done.length, full: done.length === SUBJECTS.length };
+}
+
+function render() {
+  clearInterval(tick);
+  if (S.view === "exam" && S.exam) return renderExam();
+  if (S.view === "report" && S.report) return renderReport();
+  renderBoard();
+}
+
+/* ---------- Board ---------- */
+function renderBoard() {
+  const g = weighted();
+  app.innerHTML = `
+  <header class="mast">
+    <div>
+      <p class="label">Supreme Court of the Philippines · Practice sitting</p>
+      <h1>Philippine Bar Simulator</h1>
+      <p class="muted">Six subjects, weighted as in recent Bar Bulletins. Passing general average: ${PASS}%.</p>
+    </div>
+    <p class="seal">Lex dura sed lex</p>
+  </header>
+
+  <section class="panel card-score">
+    <div class="big" style="color:${g ? (g.avg >= PASS ? "var(--good)" : "var(--bad)") : "var(--muted)"}">${g ? g.avg.toFixed(2) + "%" : "—"}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <p><strong>Weighted general average</strong> <span class="muted small">${g ? `${g.done} of 6 subjects graded${g.full ? "" : " · provisional"}` : "Sit a subject to start your scorecard."}</span></p>
+      <div class="bar" aria-hidden="true"><i style="width:${g ? Math.min(100, g.avg) : 0}%"></i><b></b></div>
+      <p class="small muted">Gold line marks ${PASS}%. ${g ? (g.avg >= PASS ? "On track to pass." : "Below the passing mark.") : ""}</p>
+    </div>
+  </section>
+
+  <section class="settings" aria-label="Sitting settings">
+    <label for="dur">Time per subject
+      <select id="dur">${DURATIONS.map(([m, l]) => `<option value="${m}" ${m == S.duration ? "selected" : ""}>${l}</option>`).join("")}</select>
+    </label>
+    <label class="check" for="strict"><input type="checkbox" id="strict" ${S.strict ? "checked" : ""}> Strict mode (no paste, tab switches logged)</label>
+    ${Object.keys(S.scores).length ? `<button id="reset">Clear scorecard</button>` : ""}
+  </section>
+
+  <div class="grid">
+    ${SUBJECTS.map(s => {
+      const sc = S.scores[s.id];
+      const n = BANK[s.id].length;
+      return `<article class="subj">
+        <div class="top"><span class="label">${s.sched}</span><span class="weight">${s.weight}%</span></div>
+        <h3>${esc(s.name)}</h3>
+        <p class="small muted">${n} questions · ${BANK[s.id].reduce((a, q) => a + q.pts, 0)} points</p>
+        <div class="foot">
+          ${sc == null ? `<span class="pill idle">Not taken</span>` : `<span class="pill ${sc >= PASS ? "good" : "bad"}">${sc.toFixed(1)}%</span>`}
+          <button class="primary" data-start="${s.id}">${sc == null ? "Begin" : "Retake"}</button>
+        </div>
+      </article>`;
+    }).join("")}
+  </div>
+  <p class="small muted" style="margin-top:22px">Questions are original practice problems, not past Bar questions. Answers save in this browser as you write. Verify every cited rule against the current text before relying on it.</p>`;
+
+  $("#dur").onchange = e => { S.duration = +e.target.value; save(); };
+  $("#strict").onchange = e => { S.strict = e.target.checked; save(); };
+  const r = $("#reset");
+  if (r) r.onclick = () => {
+    if (r.dataset.armed) { S.scores = {}; save(); render(); }
+    else { r.dataset.armed = 1; r.textContent = "Click again to clear"; }
+  };
+  app.querySelectorAll("[data-start]").forEach(b => b.onclick = () => startExam(b.dataset.start));
+}
+
+function startExam(id) {
+  S.exam = { subject: id, idx: 0, answers: BANK[id].map(() => ""), flags: BANK[id].map(() => false),
+    endAt: Date.now() + S.duration * 60000, minutes: S.duration, strict: S.strict, tabSwitches: 0 };
+  S.view = "exam"; confirmSubmit = false; save(); render(); window.scrollTo(0, 0);
+}
+
+/* ---------- Exam ---------- */
+function fmt(ms) {
+  const t = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function renderExam() {
+  const E = S.exam, s = subj(E.subject), qs = BANK[E.subject], q = qs[E.idx];
+  const answered = E.answers.filter(a => a.trim()).length;
+  app.innerHTML = `
+  <div class="examhead">
+    <div style="min-width:0"><p class="label">${s.sched} · ${s.weight}%</p><h2>${esc(s.name)}</h2></div>
+    <div class="row"><span class="timer" id="timer" aria-live="off">${fmt(E.endAt - Date.now())}</span>
+      <button class="primary" id="submit">Submit booklet</button></div>
+  </div>
+  ${confirmSubmit ? `<div class="confirm" style="margin-top:14px"><p>${answered} of ${qs.length} answered. Submit for grading? You cannot return to this booklet.</p>
+    <div class="row"><button id="cancel">Keep writing</button><button class="primary" id="confirm">Submit now</button></div></div>` : ""}
+  <nav class="nav" aria-label="Questions">
+    ${qs.map((_, i) => `<button data-go="${i}" class="${i === E.idx ? "cur" : ""} ${E.answers[i].trim() ? "done" : ""} ${E.flags[i] ? "flag" : ""}" aria-label="Question ${i + 1}">${i + 1}</button>`).join("")}
+  </nav>
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div class="row" style="justify-content:space-between"><span class="label">Question ${E.idx + 1} of ${qs.length} · ${q.pts} points</span>
+      <button id="flag">${E.flags[E.idx] ? "Unflag" : "Flag for review"}</button></div>
+    <p class="qtext">${esc(q.q)}</p>
+    ${E.strict && E.tabSwitches ? `<p class="warnbox">You left the exam window ${E.tabSwitches} time${E.tabSwitches > 1 ? "s" : ""}. In the actual Bar, the exam software logs this.</p>` : ""}
+    <label class="label" for="ans">Answer booklet</label>
+    <textarea id="ans" class="booklet" spellcheck="false" placeholder="State your answer, the legal basis, its application to the facts, and your conclusion.">${esc(E.answers[E.idx])}</textarea>
+    <div class="meta"><span id="wc">${words(E.answers[E.idx])} words</span><span>${E.strict ? "Strict mode: paste disabled" : "Saved in this browser"}</span></div>
+    <div class="row" style="justify-content:space-between">
+      <button id="prev" ${E.idx === 0 ? "disabled" : ""}>Previous</button>
+      <button id="next" ${E.idx === qs.length - 1 ? "disabled" : ""}>Next</button>
+    </div>
+  </section>`;
+
+  const ta = $("#ans");
+  ta.oninput = () => { E.answers[E.idx] = ta.value; $("#wc").textContent = words(ta.value) + " words"; save(); markNav(); };
+  if (E.strict) ["paste", "drop"].forEach(ev => ta.addEventListener(ev, e => e.preventDefault()));
+  const go = i => { E.idx = i; save(); render(); };
+  app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
+  $("#prev").onclick = () => go(E.idx - 1);
+  $("#next").onclick = () => go(E.idx + 1);
+  $("#flag").onclick = () => { E.flags[E.idx] = !E.flags[E.idx]; save(); render(); };
+  $("#submit").onclick = () => { confirmSubmit = true; render(); };
+  if (confirmSubmit) { $("#cancel").onclick = () => { confirmSubmit = false; render(); }; $("#confirm").onclick = finishExam; }
+
+  const t = $("#timer");
+  tick = setInterval(() => {
+    const left = E.endAt - Date.now();
+    t.textContent = fmt(left);
+    t.classList.toggle("low", left < 5 * 60000);
+    if (left <= 0) finishExam();
+  }, 500);
+}
+function markNav() {
+  const E = S.exam;
+  app.querySelectorAll("[data-go]").forEach(b => b.classList.toggle("done", !!E.answers[+b.dataset.go].trim()));
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && S.view === "exam" && S.exam?.strict) { S.exam.tabSwitches++; save(); }
+  else if (!document.hidden && S.view === "exam") render();
+});
+
+function finishExam() {
+  clearInterval(tick);
+  const E = S.exam;
+  S.report = { subject: E.subject, answers: E.answers, tabSwitches: E.tabSwitches, minutes: E.minutes,
+    usedMs: Math.min(E.minutes * 60000, Date.now() - (E.endAt - E.minutes * 60000)), grades: E.answers.map(() => null) };
+  S.exam = null; S.view = "report"; confirmSubmit = false; save(); render(); window.scrollTo(0, 0);
+}
+
+/* ---------- Report ---------- */
+function reportTotal() {
+  const R = S.report, qs = BANK[R.subject];
+  if (R.grades.some(g => g == null)) return null;
+  const got = R.grades.reduce((a, g) => a + g.score, 0), max = qs.reduce((a, q) => a + q.pts, 0);
+  return got / max * 100;
+}
+
+function renderReport() {
+  const R = S.report, s = subj(R.subject), qs = BANK[R.subject], total = reportTotal();
+  const graded = R.grades.filter(Boolean).length;
+  app.innerHTML = `
+  <header class="mast">
+    <div><p class="label">Examiner's report · ${s.sched}</p><h1>${esc(s.name)}</h1>
+      <p class="muted small">Time used ${fmt(R.usedMs)} of ${fmt(R.minutes * 60000)}${R.tabSwitches ? ` · left the window ${R.tabSwitches}×` : ""}</p></div>
+    <button id="back">Back to subjects</button>
+  </header>
+
+  <section class="panel card-score">
+    <div class="big" style="color:${total == null ? "var(--muted)" : total >= PASS ? "var(--good)" : "var(--bad)"}">${total == null ? `${graded}/${qs.length}` : total.toFixed(1) + "%"}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <p><strong>${total == null ? "Questions graded" : "Subject grade"}</strong></p>
+      <p class="small muted">${total == null ? "Grade each answer with Claude or score it yourself against the examiner's note. The subject grade posts to your scorecard once every answer has a score."
+        : `Posted to your scorecard at ${s.weight}% weight.`}</p>
+      <div class="row" id="bulk"></div>
+    </div>
+  </section>
+
+  ${qs.map((q, i) => {
+    const g = R.grades[i], a = R.answers[i];
+    return `<article class="qres" id="q${i}">
+      <div class="hd"><h3>Question ${i + 1}</h3>
+        <span class="pill ${g ? (g.score / q.pts >= .75 ? "good" : g.score / q.pts >= .5 ? "warn" : "bad") : "idle"}">${g ? `${g.score} / ${q.pts}` : `— / ${q.pts}`}</span></div>
+      <p class="qtext small" style="font-size:.97rem">${esc(q.q)}</p>
+      <div><p class="label">Your answer · ${words(a)} words</p><div class="answer">${a.trim() ? esc(a) : "<em class='muted'>No answer.</em>"}</div></div>
+      ${g ? `<div class="grade">
+          <p class="label">${g.by === "claude" ? "Graded by Claude" : "Self-graded"}</p>
+          ${g.comment ? `<p>${esc(g.comment)}</p>` : ""}
+          ${g.missed?.length ? `<div><strong class="small">Missed or weak</strong><ul>${g.missed.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : ""}
+          ${g.model ? `<details><summary>Suggested answer</summary><p class="key">${esc(g.model)}</p></details>` : ""}
+        </div>` : `<div class="row ai" data-i="${i}"></div>`}
+      <details><summary>Examiner's note</summary><p class="key">${esc(q.key)}</p></details>
+      <div class="row small"><label for="self${i}">Score it yourself</label>
+        <input type="number" id="self${i}" class="score-in" min="0" max="${q.pts}" step="0.5" value="${g ? g.score : ""}"> <span class="muted">/ ${q.pts}</span>
+        <button data-self="${i}">Save score</button></div>
+    </article>`;
+  }).join("")}`;
+
+  $("#back").onclick = () => { S.view = "board"; save(); render(); };
+  app.querySelectorAll("[data-self]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.self, v = parseFloat($("#self" + i).value), max = qs[i].pts;
+    if (isNaN(v)) return;
+    R.grades[i] = { ...(R.grades[i] || {}), score: Math.max(0, Math.min(max, v)), by: "self" };
+    postScore(); save(); render();
+  });
+  wireClaude();
+}
+
+function postScore() {
+  const t = reportTotal();
+  if (t != null) S.scores[S.report.subject] = Math.round(t * 10) / 10;
+}
+
+/* ---------- Claude grading (sample capability) ---------- */
+const ERR = { not_granted: null, sampling_disabled: null, not_declared: null, capability_disabled: null, capability_removed: null,
+  rate_limited: "Claude is busy or your usage limit was reached. Try again later, or score it yourself.",
+  session_expired: "Sign in to Claude again to grade.", invalid_json: "The grade came back malformed. Try again.",
+  refused: "Claude declined to grade this answer.", };
+
+async function wireClaude() {
+  if (!grader) grader = window.claude?.use ? await window.claude.use("sample").catch(() => null) : null;
+  if (!grader || S.view !== "report") return;
+  const R = S.report;
+  app.querySelectorAll(".ai").forEach(el => {
+    const i = +el.dataset.i;
+    el.innerHTML = `<button class="primary">Grade with Claude</button><span class="small muted"></span>`;
+    el.querySelector("button").onclick = () => gradeOne(i, el);
+  });
+  const pending = R.grades.map((g, i) => g ? -1 : i).filter(i => i >= 0);
+  const bulk = $("#bulk");
+  if (bulk && pending.length > 1) {
+    bulk.innerHTML = `<button class="primary">Grade all ${pending.length} with Claude</button>`;
+    bulk.querySelector("button").onclick = async e => {
+      e.target.disabled = true;
+      for (const i of pending) { const el = app.querySelector(`.ai[data-i="${i}"]`); if (el && !(await gradeOne(i, el, true))) break; }
+      render();
+    };
+  }
+}
+
+async function gradeOne(i, el, batch) {
+  const R = S.report, q = BANK[R.subject][i], a = R.answers[i], s = subj(R.subject);
+  const btn = el.querySelector("button"), note = el.querySelector("span");
+  btn.disabled = true; note.textContent = "Claude is reading your answer…";
+  if (!a.trim()) { R.grades[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [], model: "" }; postScore(); save(); if (!batch) render(); return true; }
+  const prompt = `You are an examiner for the Philippine Bar Examinations, subject: ${s.name}. Grade the examinee's answer.
+
+Standard: the Supreme Court rewards competence over rote recall. Credit a correct conclusion, the correct legal basis (provision, doctrine, or case), and sound application of the rule to the specific facts. A correct conclusion with no legal basis earns little. A wrong conclusion with sound reasoning may earn partial credit. Do not penalize omitted G.R. numbers or case names when the doctrine is correctly stated.
+
+QUESTION (${q.pts} points):
+${q.q}
+
+EXAMINER'S NOTE (the issue and legal basis expected):
+${q.key}
+
+EXAMINEE'S ANSWER:
+${a.slice(0, 12000)}
+
+Reply with only a JSON object:
+{"score": number from 0 to ${q.pts} in steps of 0.5, "comment": "2-4 sentences on what the answer got right and wrong", "missed": ["each missing or mistaken point, short"], "model": "a concise suggested answer in the conclusion-basis-application form, under 200 words"}`;
+  try {
+    const r = await grader.json(prompt, { modelTier: "default" });
+    const sc = Math.max(0, Math.min(q.pts, Math.round((+r.score || 0) * 2) / 2));
+    R.grades[i] = { score: sc, by: "claude", comment: String(r.comment || ""), missed: Array.isArray(r.missed) ? r.missed.map(String) : [], model: String(r.model || "") };
+    postScore(); save(); if (!batch) render(); return true;
+  } catch (e) {
+    const msg = e?.code in ERR ? ERR[e.code] : "Grading failed. Try again, or score it yourself.";
+    if (msg == null) { el.innerHTML = ""; $("#bulk") && ($("#bulk").innerHTML = ""); return false; }
+    btn.disabled = false; note.textContent = e?.code === "cancelled" ? "" : msg; return false;
+  }
+}
+
+render();
+</script>
