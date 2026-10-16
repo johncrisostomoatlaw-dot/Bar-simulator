@@ -379,7 +379,7 @@ function renderExam() {
     ${E.strict && E.tabSwitches ? `<p class="warnbox">You left the exam window ${E.tabSwitches} time${E.tabSwitches > 1 ? "s" : ""}. In the actual Bar, the exam software logs this.</p>` : ""}
     <label class="label" for="ans">Answer booklet</label>
     <textarea id="ans" class="booklet" spellcheck="false" ${g || busy ? "readonly" : ""} placeholder="State your answer, the legal basis, its application to the facts, and your conclusion.">${esc(E.answers[E.idx])}</textarea>
-    <div class="meta"><span id="wc">${words(E.answers[E.idx])} words</span><span>${g ? "Checked · answer locked" : review ? "Pressing Next checks this answer" : E.strict ? "Strict mode: paste disabled" : "Saved in this browser"}</span></div>
+    <div class="meta"><span id="wc">${words(E.answers[E.idx])} words</span><span class="row" style="gap:8px">${g ? "Checked · answer locked" : review ? "Pressing Next checks this answer" : E.strict ? (E.allowPaste ? "Strict mode: paste allowed" : "Strict mode: paste disabled") : "Saved in this browser"}${E.strict && !g ? `<button id="paste" class="small" style="padding:3px 10px">${E.allowPaste ? "Disable paste" : "Enable paste"}</button>` : ""}</span></div>
     ${review && (g || busy || checkNote === "self") ? feedbackPanel(q, g, busy) : ""}
     ${review && checkNote && checkNote !== "self" && !busy ? `<p class="warnbox">${esc(checkNote)}</p>` : ""}
     <div class="row" style="justify-content:space-between">
@@ -390,7 +390,8 @@ function renderExam() {
 
   const ta = $("#ans");
   ta.oninput = () => { E.answers[E.idx] = ta.value; $("#wc").textContent = words(ta.value) + " words"; save(); markNav(); };
-  if (E.strict) ["paste", "drop"].forEach(ev => ta.addEventListener(ev, e => e.preventDefault()));
+  if (E.strict) ["paste", "drop"].forEach(ev => ta.addEventListener(ev, e => { if (!E.allowPaste) e.preventDefault(); }));
+  if ($("#paste")) $("#paste").onclick = () => { E.allowPaste = !E.allowPaste; save(); render(); $("#ans")?.focus(); };
   const go = i => { E.idx = i; checkNote = ""; save(); render(); };
   app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
   $("#prev").onclick = () => go(E.idx - 1);
