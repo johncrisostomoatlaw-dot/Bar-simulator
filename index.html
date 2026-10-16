@@ -91,6 +91,8 @@ summary { cursor: pointer; font-weight: 600 }
 .grade { border-left: 3px solid var(--gold); padding: 4px 0 4px 14px; display: flex; flex-direction: column; gap: 6px; white-space: pre-wrap }
 .grade ul { margin: 0; padding-left: 20px }
 .score-in { width: 80px }
+.reg { display: flex; flex-direction: column; gap: 6px }
+.reg ul { margin: 0; padding-left: 20px }
 .small { font-size: .85rem }
 @media (prefers-reduced-motion: no-preference) { .bar > i { transition: width .5s ease } }
 </style>
@@ -169,6 +171,25 @@ const BANK = {
   ],
 };
 
+// Registry cases matched by reading each case's Verbatim Doctrine; only matches judged at 75% confidence or higher.
+const REGISTRY = { ds: "collection://d6fddc7b-46dc-4a9c-b3a4-4e326b9e0de1", url: "https://app.notion.com/p/caae92a0bbcf4825bfecdb2ae178da97" };
+const CASES = {
+  "pol-2": [{ title: "Kilusan ng Mamamayan Para sa Matuwid na Bayan v. Commission on Elections", url: "https://app.notion.com/p/3defb2326e1f81e08a30eeba8c57f7d2" }],
+  "civ-0": [{ title: "Tan-Andal v. Andal", url: "https://app.notion.com/p/3defb2326e1f814396c4cc0ba3e85213" },
+            { title: "Dela Cruz-Lanuza v. Lanuza, Jr.", url: "https://app.notion.com/p/3defb2326e1f812da71ee3df8056c949" }],
+  "lab-1": [{ title: "Manggagawa sa Komunikasyon ng Pilipinas v. PLDT, Inc., et al.", url: "https://app.notion.com/p/3dffb2326e1f8140a1a5f784fbc74df6" }],
+};
+// Search terms for the loose live registry search.
+const KW = {
+  pol: ["checkpoint search probable cause", "party-list marginalized sectoral", "taxpayer suit standing", "diplomatic immunity"],
+  comtax: ["incomplete instrument holder in due course", "One Person Corporation", "prescription assessment fraudulent return", "protest assessment Commissioner inaction"],
+  civ: ["psychological incapacity", "double sale registration", "preterition compulsory heir", "employer liability quasi-delict"],
+  lab: ["reinstatement pending appeal", "labor-only contracting", "floating status"],
+  crim: ["unlawful aggression self-defense", "robbery with homicide conspiracy", "notice of dishonor B.P. 22"],
+  rem: ["certiorari motion for reconsideration", "summons corporation", "dying declaration", "conflict of interest former client", "small claims jurisdiction"],
+};
+for (const id in BANK) BANK[id].forEach((q, i) => { q.cases = CASES[`${id}-${i}`] || []; q.kw = KW[id][i]; });
+
 const DURATIONS = [ [240, "4 hours (actual Bar)"], [120, "2 hours"], [60, "1 hour"], [30, "30 minutes"], [15, "15 minutes"] ];
 const STORE = "bar-sim-v1";
 const PASS = 75;
@@ -181,7 +202,7 @@ const NOTION = { server: "Notion", ds: "collection://84dcac12-f4a4-4254-a161-db7
 const COUNTS = [3, 5, 8, 10];
 
 let S = { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null,
-  source: "notion", count: 5, includeReview: false, ...(load() || {}) };
+  source: "builtin", count: 5, includeReview: false, ...(load() || {}) };
 let mcp, mcpReady = window.claude?.use ? window.claude.use("mcp").catch(() => null).then(m => (mcp = m)) : Promise.resolve(null);
 let loading = null, sourceNote = "";
 let tick = null, grader = null, confirmSubmit = false;
@@ -401,6 +422,11 @@ function renderReport() {
           ${g.missed?.length ? `<div><strong class="small">Missed or weak</strong><ul>${g.missed.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : ""}
           ${g.model ? `<details><summary>Suggested answer</summary><p class="key">${esc(g.model)}</p></details>` : ""}
         </div>` : `<div class="row ai" data-i="${i}"></div>`}
+      <div class="reg"><p class="label">Your Case Digest Registry</p>
+        ${q.cases?.length ? `<ul>${q.cases.map(c => `<li><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a></li>`).join("")}</ul>`
+          : q.src ? "" : `<p class="small muted">No registry case matched this question at 75% confidence.</p>`}
+        ${q.kw ? `<div class="row small"><button data-reg="${i}">Search registry</button><span class="muted">Loose keyword match: “${esc(q.kw)}”. Check each result yourself.</span></div><ul class="small" id="regres${i}"></ul>` : ""}
+      </div>
       <details><summary>${q.src ? "Model answer from Notion" : "Examiner's note"}</summary><p class="key">${esc(q.key)}</p>${q.src ? `<p class="small"><a href="${esc(q.src.url)}" target="_blank" rel="noopener">Open in Notion</a></p>` : ""}</details>
       <div class="row small"><label for="self${i}">Score it yourself</label>
         <input type="number" id="self${i}" class="score-in" min="0" max="${q.pts}" step="0.5" value="${g ? g.score : ""}"> <span class="muted">/ ${q.pts}</span>
@@ -415,7 +441,24 @@ function renderReport() {
     R.grades[i] = { ...(R.grades[i] || {}), score: Math.max(0, Math.min(max, v)), by: "self" };
     postScore(); save(); render();
   });
+  app.querySelectorAll("[data-reg]").forEach(b => b.onclick = () => searchRegistry(+b.dataset.reg, b));
   wireClaude();
+}
+
+async function searchRegistry(i, btn) {
+  const q = (S.report.qs || BANK[S.report.subject])[i], out = $("#regres" + i);
+  btn.disabled = true; out.innerHTML = "<li class='muted'>Searching your registry…</li>";
+  try {
+    await mcpReady;
+    if (!mcp) throw { code: "no_mcp" };
+    const r = await mcp.callTool(NOTION.server, "notion-search", { query: q.kw, data_source_url: REGISTRY.ds, page_size: 5, max_highlight_length: 0 });
+    const known = new Set((q.cases || []).map(c => c.url.replace(/\?.*$/, "")));
+    const hits = (r?.payload?.results || []).filter(h => h.type === "page" && !known.has(String(h.url).replace(/\?.*$/, "")));
+    out.innerHTML = hits.length ? hits.map(h => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <span class="pill idle">loose match</span></li>`).join("")
+      : "<li class='muted'>No other registry cases came up.</li>";
+  } catch (e) {
+    out.innerHTML = `<li class="muted">${esc(notionError(e).replace(/ Using the built-in set[^.]*\./, ""))}</li>`;
+  } finally { btn.disabled = false; }
 }
 
 function postScore() {
@@ -463,13 +506,13 @@ async function notionQuestions(id) {
       if (!p || picked.length >= S.count) continue;
       const { props, question, answer } = parseNotionPage(p);
       if (!want.includes(props.Subject) || !okStatus.includes(props.Status) || question.length < 40 || !answer) continue;
-      picked.push({ q: question, key: answer, src: { title: props.Question || p.title || "Notion question", url: props.url || p.url, status: props.Status, track: props.Track } });
+      picked.push({ q: question, key: answer, kw: props.Question || p.title, src: { title: props.Question || p.title || "Notion question", url: props.url || p.url, status: props.Status, track: props.Track } });
     }
   }
   if (!picked.length) throw { code: "empty", message: `No ${okStatus.join(" or ")} ${want.join(" / ")} questions were found in your Notion repository. Using the built-in set.` };
   const fill = BANK[id].slice(0, Math.max(0, S.count - picked.length));
   if (fill.length) sourceNote = `Found ${picked.length} usable Notion question${picked.length > 1 ? "s" : ""} for this subject; ${fill.length} built-in question${fill.length > 1 ? "s" : ""} fill the rest.`;
-  const all = [...picked, ...fill.map(q => ({ q: q.q, key: q.key }))];
+  const all = [...picked, ...fill.map(q => ({ q: q.q, key: q.key, cases: q.cases, kw: q.kw }))];
   const base = Math.floor(100 / all.length), extra = 100 - base * all.length;
   return all.map((q, i) => ({ ...q, pts: base + (i < extra ? 1 : 0) }));
 }
