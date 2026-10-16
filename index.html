@@ -91,6 +91,7 @@ summary { cursor: pointer; font-weight: 600 }
 .grade { border-left: 3px solid var(--gold); padding: 4px 0 4px 14px; display: flex; flex-direction: column; gap: 6px; white-space: pre-wrap }
 .grade ul { margin: 0; padding-left: 20px }
 .score-in { width: 80px }
+.feedback { display: flex; flex-direction: column; gap: 12px; border-color: var(--gold) }
 .reg { display: flex; flex-direction: column; gap: 6px }
 .reg ul { margin: 0; padding-left: 20px }
 .small { font-size: .85rem }
@@ -202,7 +203,7 @@ const NOTION = { server: "Notion", ds: "collection://84dcac12-f4a4-4254-a161-db7
 const COUNTS = [3, 5, 8, 10];
 
 let S = { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null,
-  source: "builtin", count: 5, includeReview: false, ...(load() || {}) };
+  mode: "bar", source: "builtin", count: 5, includeReview: false, ...(load() || {}) };
 let mcp, mcpReady = window.claude?.use ? window.claude.use("mcp").catch(() => null).then(m => (mcp = m)) : Promise.resolve(null);
 let loading = null, sourceNote = "";
 let tick = null, grader = null, confirmSubmit = false;
@@ -252,7 +253,10 @@ function renderBoard() {
   </section>
 
   <section class="settings" aria-label="Sitting settings">
-    <label for="dur">Time per subject
+    <label for="mode">Mode
+      <select id="mode"><option value="bar" ${S.mode !== "review" ? "selected" : ""}>Bar simulation · no feedback until the end</option><option value="review" ${S.mode === "review" ? "selected" : ""}>Review · feedback after each answer</option></select>
+    </label>
+    <label for="dur" ${S.mode === "review" ? "hidden" : ""}>Time per subject
       <select id="dur">${DURATIONS.map(([m, l]) => `<option value="${m}" ${m == S.duration ? "selected" : ""}>${l}</option>`).join("")}</select>
     </label>
     <label for="src">Question source
@@ -283,6 +287,7 @@ function renderBoard() {
   </div>
   <p class="small muted" style="margin-top:22px">Questions are original practice problems, not past Bar questions. Answers save in this browser as you write. Verify every cited rule against the current text before relying on it.</p>`;
 
+  $("#mode").onchange = e => { S.mode = e.target.value; save(); render(); };
   $("#dur").onchange = e => { S.duration = +e.target.value; save(); };
   $("#src").onchange = e => { S.source = e.target.value; sourceNote = ""; save(); render(); };
   if ($("#cnt")) $("#cnt").onchange = e => { S.count = +e.target.value; save(); render(); };
@@ -304,8 +309,10 @@ async function startExam(id) {
     catch (e) { sourceNote = notionError(e); qs = BANK[id]; }
     loading = null;
   }
-  S.exam = { subject: id, qs, idx: 0, answers: qs.map(() => ""), flags: qs.map(() => false),
-    endAt: Date.now() + S.duration * 60000, minutes: S.duration, strict: S.strict, tabSwitches: 0 };
+  const review = S.mode === "review";
+  S.exam = { subject: id, qs, mode: review ? "review" : "bar", idx: 0, answers: qs.map(() => ""), flags: qs.map(() => false),
+    checked: qs.map(() => null), startedAt: Date.now(), endAt: review ? null : Date.now() + S.duration * 60000,
+    minutes: review ? null : S.duration, strict: S.strict, tabSwitches: 0 };
   S.view = "exam"; confirmSubmit = false; save(); render(); window.scrollTo(0, 0);
 }
 
@@ -316,17 +323,51 @@ function fmt(ms) {
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+const verdict = (g, pts) => {
+  const r = g.score / pts;
+  return r >= .75 ? ["good", "Correct"] : r >= .5 ? ["warn", "Partly correct"] : ["bad", "Incorrect"];
+};
+
+function gradeBlock(g) {
+  return `<div class="grade">
+    <p class="label">${g.by === "claude" ? "Graded by Claude" : "Self-graded"}</p>
+    ${g.comment ? `<p>${esc(g.comment)}</p>` : ""}
+    ${g.missed?.length ? `<div><strong class="small">Missed or weak</strong><ul>${g.missed.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : ""}
+    ${g.model ? `<details><summary>Suggested answer</summary><p class="key">${esc(g.model)}</p></details>` : ""}
+  </div>`;
+}
+
+function registryBlock(q, key) {
+  return `<div class="reg"><p class="label">Close cases from your Case Digest Registry</p>
+    ${q.cases?.length ? `<ul>${q.cases.map(c => `<li><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a></li>`).join("")}</ul>`
+      : q.src ? "" : `<p class="small muted">No registry case matched this question at 75% confidence.</p>`}
+    ${q.kw ? `<div class="row small"><button data-reg="${key}">Search registry</button><span class="muted">Loose keyword match: “${esc(q.kw)}”. Check each result yourself.</span></div><ul class="small" id="regres-${key}"></ul>` : ""}
+  </div>`;
+}
+
+function noteBlock(q) {
+  return `<details><summary>${q.src ? "Model answer from Notion" : "Examiner's note"}</summary><p class="key">${esc(q.key)}</p>${q.src ? `<p class="small"><a href="${esc(q.src.url)}" target="_blank" rel="noopener">Open in Notion</a></p>` : ""}</details>`;
+}
+
+function wireRegistry(qs) {
+  app.querySelectorAll("[data-reg]").forEach(b => b.onclick = () => searchRegistry(qs[+b.dataset.reg], b, $("#regres-" + b.dataset.reg)));
+}
+
+let checking = null, checkNote = "";
+
 function renderExam() {
   const E = S.exam, s = subj(E.subject), qs = E.qs || BANK[E.subject], q = qs[E.idx];
+  const review = E.mode === "review", g = review ? E.checked[E.idx] : null, last = E.idx === qs.length - 1;
   const answered = E.answers.filter(a => a.trim()).length;
+  const busy = checking === E.idx;
   app.innerHTML = `
   <div class="examhead">
-    <div style="min-width:0"><p class="label">${s.sched} · ${s.weight}%</p><h2>${esc(s.name)}</h2></div>
-    <div class="row"><span class="timer" id="timer" aria-live="off">${fmt(E.endAt - Date.now())}</span>
-      <button class="primary" id="submit">Submit booklet</button></div>
+    <div style="min-width:0"><p class="label">${s.sched} · ${s.weight}% · ${review ? "Review mode" : "Bar simulation"}</p><h2>${esc(s.name)}</h2></div>
+    <div class="row">${review ? `<span class="pill idle">Untimed</span>` : `<span class="timer" id="timer" aria-live="off">${fmt(E.endAt - Date.now())}</span>`}
+      <button class="primary" id="submit">${review ? "Finish review" : "Submit booklet"}</button></div>
   </div>
-  ${confirmSubmit ? `<div class="confirm" style="margin-top:14px"><p>${answered} of ${qs.length} answered. Submit for grading? You cannot return to this booklet.</p>
-    <div class="row"><button id="cancel">Keep writing</button><button class="primary" id="confirm">Submit now</button></div></div>` : ""}
+  ${confirmSubmit ? `<div class="confirm" style="margin-top:14px"><p>${review ? `${E.checked.filter(Boolean).length} of ${qs.length} checked. Finish and see your summary?` : `${answered} of ${qs.length} answered. Submit for grading? You cannot return to this booklet.`}</p>
+    <div class="row"><button id="cancel">Keep writing</button><button class="primary" id="confirm">${review ? "Finish" : "Submit now"}</button></div></div>` : ""}
   <nav class="nav" aria-label="Questions">
     ${qs.map((_, i) => `<button data-go="${i}" class="${i === E.idx ? "cur" : ""} ${E.answers[i].trim() ? "done" : ""} ${E.flags[i] ? "flag" : ""}" aria-label="Question ${i + 1}">${i + 1}</button>`).join("")}
   </nav>
@@ -337,33 +378,81 @@ function renderExam() {
     <p class="qtext">${esc(q.q)}</p>
     ${E.strict && E.tabSwitches ? `<p class="warnbox">You left the exam window ${E.tabSwitches} time${E.tabSwitches > 1 ? "s" : ""}. In the actual Bar, the exam software logs this.</p>` : ""}
     <label class="label" for="ans">Answer booklet</label>
-    <textarea id="ans" class="booklet" spellcheck="false" placeholder="State your answer, the legal basis, its application to the facts, and your conclusion.">${esc(E.answers[E.idx])}</textarea>
-    <div class="meta"><span id="wc">${words(E.answers[E.idx])} words</span><span>${E.strict ? "Strict mode: paste disabled" : "Saved in this browser"}</span></div>
+    <textarea id="ans" class="booklet" spellcheck="false" ${g || busy ? "readonly" : ""} placeholder="State your answer, the legal basis, its application to the facts, and your conclusion.">${esc(E.answers[E.idx])}</textarea>
+    <div class="meta"><span id="wc">${words(E.answers[E.idx])} words</span><span>${g ? "Checked · answer locked" : review ? "Pressing Next checks this answer" : E.strict ? "Strict mode: paste disabled" : "Saved in this browser"}</span></div>
+    ${review && (g || busy || checkNote === "self") ? feedbackPanel(q, g, busy) : ""}
+    ${review && checkNote && checkNote !== "self" && !busy ? `<p class="warnbox">${esc(checkNote)}</p>` : ""}
     <div class="row" style="justify-content:space-between">
       <button id="prev" ${E.idx === 0 ? "disabled" : ""}>Previous</button>
-      <button id="next" ${E.idx === qs.length - 1 ? "disabled" : ""}>Next</button>
+      <button id="next" class="${review && !g ? "primary" : ""}" ${busy || (!review && last) ? "disabled" : ""}>${busy ? "Checking…" : review && !g ? "Next" : last ? "See summary" : "Next question"}</button>
     </div>
   </section>`;
 
   const ta = $("#ans");
   ta.oninput = () => { E.answers[E.idx] = ta.value; $("#wc").textContent = words(ta.value) + " words"; save(); markNav(); };
   if (E.strict) ["paste", "drop"].forEach(ev => ta.addEventListener(ev, e => e.preventDefault()));
-  const go = i => { E.idx = i; save(); render(); };
+  const go = i => { E.idx = i; checkNote = ""; save(); render(); };
   app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
   $("#prev").onclick = () => go(E.idx - 1);
-  $("#next").onclick = () => go(E.idx + 1);
+  $("#next").onclick = () => {
+    if (review && !g) return checkCurrent();
+    if (last) { confirmSubmit = true; return render(); }
+    go(E.idx + 1);
+  };
   $("#flag").onclick = () => { E.flags[E.idx] = !E.flags[E.idx]; save(); render(); };
   $("#submit").onclick = () => { confirmSubmit = true; render(); };
   if (confirmSubmit) { $("#cancel").onclick = () => { confirmSubmit = false; render(); }; $("#confirm").onclick = finishExam; }
+  app.querySelectorAll("[data-selfmark]").forEach(b => b.onclick = () => {
+    E.checked[E.idx] = { score: q.pts * +b.dataset.selfmark, by: "self", comment: "", missed: [], model: "" };
+    checkNote = ""; save(); render();
+  });
+  wireRegistry(qs.map((x, i) => i === E.idx ? x : null));
 
-  const t = $("#timer");
-  tick = setInterval(() => {
-    const left = E.endAt - Date.now();
-    t.textContent = fmt(left);
-    t.classList.toggle("low", left < 5 * 60000);
-    if (left <= 0) finishExam();
-  }, 500);
+  if (!review) {
+    const t = $("#timer");
+    tick = setInterval(() => {
+      const left = E.endAt - Date.now();
+      t.textContent = fmt(left);
+      t.classList.toggle("low", left < 5 * 60000);
+      if (left <= 0) finishExam();
+    }, 500);
+  }
 }
+
+function feedbackPanel(q, g, busy) {
+  const E = S.exam;
+  if (busy) return `<div class="panel feedback"><p class="muted">Claude is checking your answer…</p></div>`;
+  if (!g) return `<div class="panel feedback">
+      <p><strong>Compare your answer with the note below, then mark it.</strong> <span class="small muted">Claude grading isn't available here.</span></p>
+      ${noteBlock(q).replace("<details>", "<details open>")}
+      <div class="row"><button data-selfmark="1">I got it right</button><button data-selfmark="0.5">Partly right</button><button data-selfmark="0">I missed it</button></div>
+      ${registryBlock(q, E.idx)}
+    </div>`;
+  const [cls, label] = verdict(g, q.pts);
+  return `<div class="panel feedback">
+      <div class="hd row" style="justify-content:space-between"><span class="pill ${cls}" style="font-size:.9rem">${label}</span><span class="small muted">${g.score} / ${q.pts}</span></div>
+      ${gradeBlock(g)}
+      ${noteBlock(q)}
+      ${registryBlock(q, E.idx)}
+    </div>`;
+}
+
+async function checkCurrent() {
+  const E = S.exam, i = E.idx, q = (E.qs || BANK[E.subject])[i], a = E.answers[i];
+  if (!a.trim()) { E.checked[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [], model: "" }; save(); return render(); }
+  if (!grader) grader = window.claude?.use ? await window.claude.use("sample").catch(() => null) : null;
+  if (!grader) { checkNote = "self"; return render(); }
+  checking = i; checkNote = ""; render();
+  try {
+    E.checked[i] = await gradeAnswer(q, a, subj(E.subject).name);
+  } catch (e) {
+    const msg = e?.code in ERR ? ERR[e.code] : "Grading failed. Press Next to try again, or mark it yourself.";
+    checkNote = msg == null ? "self" : e?.code === "cancelled" ? "" : msg;
+    if (msg == null) grader = null;
+  } finally { checking = null; }
+  save(); if (S.view === "exam" && S.exam === E) render();
+}
+
 function markNav() {
   const E = S.exam;
   app.querySelectorAll("[data-go]").forEach(b => b.classList.toggle("done", !!E.answers[+b.dataset.go].trim()));
@@ -375,10 +464,11 @@ document.addEventListener("visibilitychange", () => {
 
 function finishExam() {
   clearInterval(tick);
-  const E = S.exam;
-  S.report = { subject: E.subject, qs: E.qs || BANK[E.subject], answers: E.answers, tabSwitches: E.tabSwitches, minutes: E.minutes,
-    usedMs: Math.min(E.minutes * 60000, Date.now() - (E.endAt - E.minutes * 60000)), grades: E.answers.map(() => null) };
-  S.exam = null; S.view = "report"; confirmSubmit = false; save(); render(); window.scrollTo(0, 0);
+  const E = S.exam, review = E.mode === "review";
+  S.report = { subject: E.subject, qs: E.qs || BANK[E.subject], mode: E.mode || "bar", answers: E.answers, tabSwitches: E.tabSwitches, minutes: E.minutes,
+    usedMs: review ? Date.now() - E.startedAt : Math.min(E.minutes * 60000, Date.now() - (E.endAt - E.minutes * 60000)),
+    grades: review ? E.checked.slice() : E.answers.map(() => null) };
+  S.exam = null; S.view = "report"; confirmSubmit = false; checkNote = ""; postScore(); save(); render(); window.scrollTo(0, 0);
 }
 
 /* ---------- Report ---------- */
@@ -391,20 +481,20 @@ function reportTotal() {
 
 function renderReport() {
   const R = S.report, s = subj(R.subject), qs = R.qs || BANK[R.subject], total = reportTotal();
-  const graded = R.grades.filter(Boolean).length;
+  const review = R.mode === "review", graded = R.grades.filter(Boolean).length;
   app.innerHTML = `
   <header class="mast">
-    <div><p class="label">Examiner's report · ${s.sched}</p><h1>${esc(s.name)}</h1>
-      <p class="muted small">Time used ${fmt(R.usedMs)} of ${fmt(R.minutes * 60000)}${R.tabSwitches ? ` · left the window ${R.tabSwitches}×` : ""}</p></div>
+    <div><p class="label">${review ? "Review summary" : "Examiner's report"} · ${s.sched}</p><h1>${esc(s.name)}</h1>
+      <p class="muted small">${review ? `Untimed review · ${fmt(R.usedMs)} spent` : `Time used ${fmt(R.usedMs)} of ${fmt(R.minutes * 60000)}`}${R.tabSwitches ? ` · left the window ${R.tabSwitches}×` : ""}</p></div>
     <button id="back">Back to subjects</button>
   </header>
 
   <section class="panel card-score">
     <div class="big" style="color:${total == null ? "var(--muted)" : total >= PASS ? "var(--good)" : "var(--bad)"}">${total == null ? `${graded}/${qs.length}` : total.toFixed(1) + "%"}</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <p><strong>${total == null ? "Questions graded" : "Subject grade"}</strong></p>
-      <p class="small muted">${total == null ? "Grade each answer with Claude or score it yourself against the examiner's note. The subject grade posts to your scorecard once every answer has a score."
-        : `Posted to your scorecard at ${s.weight}% weight.`}</p>
+      <p><strong>${total == null ? "Questions graded" : review ? "Review score" : "Subject grade"}</strong></p>
+      <p class="small muted">${total == null ? "Grade each answer with Claude or score it yourself against the examiner's note." + (review ? "" : " The subject grade posts to your scorecard once every answer has a score.")
+        : review ? "Review sittings don't count toward your scorecard. Take a Bar simulation sitting for that." : `Posted to your scorecard at ${s.weight}% weight.`}</p>
       <div class="row" id="bulk"></div>
     </div>
   </section>
@@ -413,21 +503,12 @@ function renderReport() {
     const g = R.grades[i], a = R.answers[i];
     return `<article class="qres" id="q${i}">
       <div class="hd"><h3>Question ${i + 1}</h3>
-        <span class="pill ${g ? (g.score / q.pts >= .75 ? "good" : g.score / q.pts >= .5 ? "warn" : "bad") : "idle"}">${g ? `${g.score} / ${q.pts}` : `— / ${q.pts}`}</span></div>
+        <span class="pill ${g ? verdict(g, q.pts)[0] : "idle"}">${g ? `${verdict(g, q.pts)[1]} · ${g.score} / ${q.pts}` : `— / ${q.pts}`}</span></div>
       <p class="qtext small" style="font-size:.97rem">${esc(q.q)}</p>
       <div><p class="label">Your answer · ${words(a)} words</p><div class="answer">${a.trim() ? esc(a) : "<em class='muted'>No answer.</em>"}</div></div>
-      ${g ? `<div class="grade">
-          <p class="label">${g.by === "claude" ? "Graded by Claude" : "Self-graded"}</p>
-          ${g.comment ? `<p>${esc(g.comment)}</p>` : ""}
-          ${g.missed?.length ? `<div><strong class="small">Missed or weak</strong><ul>${g.missed.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : ""}
-          ${g.model ? `<details><summary>Suggested answer</summary><p class="key">${esc(g.model)}</p></details>` : ""}
-        </div>` : `<div class="row ai" data-i="${i}"></div>`}
-      <div class="reg"><p class="label">Your Case Digest Registry</p>
-        ${q.cases?.length ? `<ul>${q.cases.map(c => `<li><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a></li>`).join("")}</ul>`
-          : q.src ? "" : `<p class="small muted">No registry case matched this question at 75% confidence.</p>`}
-        ${q.kw ? `<div class="row small"><button data-reg="${i}">Search registry</button><span class="muted">Loose keyword match: “${esc(q.kw)}”. Check each result yourself.</span></div><ul class="small" id="regres${i}"></ul>` : ""}
-      </div>
-      <details><summary>${q.src ? "Model answer from Notion" : "Examiner's note"}</summary><p class="key">${esc(q.key)}</p>${q.src ? `<p class="small"><a href="${esc(q.src.url)}" target="_blank" rel="noopener">Open in Notion</a></p>` : ""}</details>
+      ${g ? gradeBlock(g) : `<div class="row ai" data-i="${i}"></div>`}
+      ${registryBlock(q, i)}
+      ${noteBlock(q)}
       <div class="row small"><label for="self${i}">Score it yourself</label>
         <input type="number" id="self${i}" class="score-in" min="0" max="${q.pts}" step="0.5" value="${g ? g.score : ""}"> <span class="muted">/ ${q.pts}</span>
         <button data-self="${i}">Save score</button></div>
@@ -441,12 +522,12 @@ function renderReport() {
     R.grades[i] = { ...(R.grades[i] || {}), score: Math.max(0, Math.min(max, v)), by: "self" };
     postScore(); save(); render();
   });
-  app.querySelectorAll("[data-reg]").forEach(b => b.onclick = () => searchRegistry(+b.dataset.reg, b));
+  wireRegistry(qs);
   wireClaude();
 }
 
-async function searchRegistry(i, btn) {
-  const q = (S.report.qs || BANK[S.report.subject])[i], out = $("#regres" + i);
+async function searchRegistry(q, btn, out) {
+  if (!q || !out) return;
   btn.disabled = true; out.innerHTML = "<li class='muted'>Searching your registry…</li>";
   try {
     await mcpReady;
@@ -463,7 +544,7 @@ async function searchRegistry(i, btn) {
 
 function postScore() {
   const t = reportTotal();
-  if (t != null) S.scores[S.report.subject] = Math.round(t * 10) / 10;
+  if (t != null && S.report.mode !== "review") S.scores[S.report.subject] = Math.round(t * 10) / 10;
 }
 
 /* ---------- Notion source (mcp capability) ---------- */
@@ -544,12 +625,8 @@ async function wireClaude() {
   }
 }
 
-async function gradeOne(i, el, batch) {
-  const R = S.report, q = (R.qs || BANK[R.subject])[i], a = R.answers[i], s = subj(R.subject);
-  const btn = el.querySelector("button"), note = el.querySelector("span");
-  btn.disabled = true; note.textContent = "Claude is reading your answer…";
-  if (!a.trim()) { R.grades[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [], model: "" }; postScore(); save(); if (!batch) render(); return true; }
-  const prompt = `You are an examiner for the Philippine Bar Examinations, subject: ${s.name}. Grade the examinee's answer.
+async function gradeAnswer(q, a, subjectName) {
+  const prompt = `You are an examiner for the Philippine Bar Examinations, subject: ${subjectName}. Grade the examinee's answer.
 
 Standard: the Supreme Court rewards competence over rote recall. Credit a correct conclusion, the correct legal basis (provision, doctrine, or case), and sound application of the rule to the specific facts. A correct conclusion with no legal basis earns little. A wrong conclusion with sound reasoning may earn partial credit. Do not penalize omitted G.R. numbers or case names when the doctrine is correctly stated.
 
@@ -564,10 +641,18 @@ ${a.slice(0, 12000)}
 
 Reply with only a JSON object:
 {"score": number from 0 to ${q.pts} in steps of 0.5, "comment": "2-4 sentences on what the answer got right and wrong", "missed": ["each missing or mistaken point, short"], "model": "a concise suggested answer in the conclusion-basis-application form, under 200 words"}`;
+  const r = await grader.json(prompt, { modelTier: "default" });
+  const sc = Math.max(0, Math.min(q.pts, Math.round((+r.score || 0) * 2) / 2));
+  return { score: sc, by: "claude", comment: String(r.comment || ""), missed: Array.isArray(r.missed) ? r.missed.map(String) : [], model: String(r.model || "") };
+}
+
+async function gradeOne(i, el, batch) {
+  const R = S.report, q = (R.qs || BANK[R.subject])[i], a = R.answers[i];
+  const btn = el.querySelector("button"), note = el.querySelector("span");
+  btn.disabled = true; note.textContent = "Claude is reading your answer…";
+  if (!a.trim()) { R.grades[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [], model: "" }; postScore(); save(); if (!batch) render(); return true; }
   try {
-    const r = await grader.json(prompt, { modelTier: "default" });
-    const sc = Math.max(0, Math.min(q.pts, Math.round((+r.score || 0) * 2) / 2));
-    R.grades[i] = { score: sc, by: "claude", comment: String(r.comment || ""), missed: Array.isArray(r.missed) ? r.missed.map(String) : [], model: String(r.model || "") };
+    R.grades[i] = await gradeAnswer(q, a, subj(R.subject).name);
     postScore(); save(); if (!batch) render(); return true;
   } catch (e) {
     const msg = e?.code in ERR ? ERR[e.code] : "Grading failed. Try again, or score it yourself.";
