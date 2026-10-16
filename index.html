@@ -173,7 +173,17 @@ const DURATIONS = [ [240, "4 hours (actual Bar)"], [120, "2 hours"], [60, "1 hou
 const STORE = "bar-sim-v1";
 const PASS = 75;
 
-let S = load() || { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null };
+// Live source: the viewer's own Notion "PH Bar Question Repository", read through the Notion connector.
+const NOTION = { server: "Notion", ds: "collection://84dcac12-f4a4-4254-a161-db78808a0ffb",
+  repo: "https://app.notion.com/p/ce77cf4a537a447083fb199091786e3f",
+  subjects: { pol: ["Political & Public International Law"], comtax: ["Mercantile / Commercial Law", "Taxation Law"], civ: ["Civil Law"],
+    lab: ["Labor Law"], crim: ["Criminal Law"], rem: ["Remedial Law", "Legal Ethics"] } };
+const COUNTS = [3, 5, 8, 10];
+
+let S = { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null,
+  source: "notion", count: 5, includeReview: false, ...(load() || {}) };
+let mcp, mcpReady = window.claude?.use ? window.claude.use("mcp").catch(() => null).then(m => (mcp = m)) : Promise.resolve(null);
+let loading = null, sourceNote = "";
 let tick = null, grader = null, confirmSubmit = false;
 
 function load() { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } }
@@ -224,21 +234,28 @@ function renderBoard() {
     <label for="dur">Time per subject
       <select id="dur">${DURATIONS.map(([m, l]) => `<option value="${m}" ${m == S.duration ? "selected" : ""}>${l}</option>`).join("")}</select>
     </label>
+    <label for="src">Question source
+      <select id="src"><option value="notion" ${S.source === "notion" ? "selected" : ""}>My Notion repository</option><option value="builtin" ${S.source === "builtin" ? "selected" : ""}>Built-in practice set</option></select>
+    </label>
+    ${S.source === "notion" ? `<label for="cnt">Questions per subject
+      <select id="cnt">${COUNTS.map(n => `<option ${n == S.count ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+    <label class="check" for="rev"><input type="checkbox" id="rev" ${S.includeReview ? "checked" : ""}> Include “Needs Review” rows</label>` : ""}
     <label class="check" for="strict"><input type="checkbox" id="strict" ${S.strict ? "checked" : ""}> Strict mode (no paste, tab switches logged)</label>
     ${Object.keys(S.scores).length ? `<button id="reset">Clear scorecard</button>` : ""}
   </section>
 
+  ${S.source === "notion" ? `<p class="small ${sourceNote ? "warnbox" : "muted"}" style="margin:-8px 0 18px">${sourceNote ? esc(sourceNote) : `Questions and model answers come live from your <a href="${NOTION.repo}" target="_blank" rel="noopener">PH Bar Question Repository</a>, ${S.includeReview ? "Verified and Needs Review" : "Verified"} rows only. Built-in questions fill any gap.`}</p>` : ""}
   <div class="grid">
     ${SUBJECTS.map(s => {
       const sc = S.scores[s.id];
-      const n = BANK[s.id].length;
+      const n = S.source === "notion" ? S.count : BANK[s.id].length;
       return `<article class="subj">
         <div class="top"><span class="label">${s.sched}</span><span class="weight">${s.weight}%</span></div>
         <h3>${esc(s.name)}</h3>
-        <p class="small muted">${n} questions · ${BANK[s.id].reduce((a, q) => a + q.pts, 0)} points</p>
+        <p class="small muted">${S.source === "notion" ? `${n} questions · Notion: ${NOTION.subjects[s.id].join(", ")}` : `${n} questions · 100 points`}</p>
         <div class="foot">
           ${sc == null ? `<span class="pill idle">Not taken</span>` : `<span class="pill ${sc >= PASS ? "good" : "bad"}">${sc.toFixed(1)}%</span>`}
-          <button class="primary" data-start="${s.id}">${sc == null ? "Begin" : "Retake"}</button>
+          <button class="primary" data-start="${s.id}" ${loading ? "disabled" : ""}>${loading === s.id ? "Loading questions…" : sc == null ? "Begin" : "Retake"}</button>
         </div>
       </article>`;
     }).join("")}
@@ -246,6 +263,9 @@ function renderBoard() {
   <p class="small muted" style="margin-top:22px">Questions are original practice problems, not past Bar questions. Answers save in this browser as you write. Verify every cited rule against the current text before relying on it.</p>`;
 
   $("#dur").onchange = e => { S.duration = +e.target.value; save(); };
+  $("#src").onchange = e => { S.source = e.target.value; sourceNote = ""; save(); render(); };
+  if ($("#cnt")) $("#cnt").onchange = e => { S.count = +e.target.value; save(); render(); };
+  if ($("#rev")) $("#rev").onchange = e => { S.includeReview = e.target.checked; save(); render(); };
   $("#strict").onchange = e => { S.strict = e.target.checked; save(); };
   const r = $("#reset");
   if (r) r.onclick = () => {
@@ -255,8 +275,15 @@ function renderBoard() {
   app.querySelectorAll("[data-start]").forEach(b => b.onclick = () => startExam(b.dataset.start));
 }
 
-function startExam(id) {
-  S.exam = { subject: id, idx: 0, answers: BANK[id].map(() => ""), flags: BANK[id].map(() => false),
+async function startExam(id) {
+  let qs = BANK[id];
+  if (S.source === "notion") {
+    loading = id; sourceNote = ""; render();
+    try { qs = await notionQuestions(id); }
+    catch (e) { sourceNote = notionError(e); qs = BANK[id]; }
+    loading = null;
+  }
+  S.exam = { subject: id, qs, idx: 0, answers: qs.map(() => ""), flags: qs.map(() => false),
     endAt: Date.now() + S.duration * 60000, minutes: S.duration, strict: S.strict, tabSwitches: 0 };
   S.view = "exam"; confirmSubmit = false; save(); render(); window.scrollTo(0, 0);
 }
@@ -269,7 +296,7 @@ function fmt(ms) {
 }
 
 function renderExam() {
-  const E = S.exam, s = subj(E.subject), qs = BANK[E.subject], q = qs[E.idx];
+  const E = S.exam, s = subj(E.subject), qs = E.qs || BANK[E.subject], q = qs[E.idx];
   const answered = E.answers.filter(a => a.trim()).length;
   app.innerHTML = `
   <div class="examhead">
@@ -285,6 +312,7 @@ function renderExam() {
   <section style="display:flex;flex-direction:column;gap:14px">
     <div class="row" style="justify-content:space-between"><span class="label">Question ${E.idx + 1} of ${qs.length} · ${q.pts} points</span>
       <button id="flag">${E.flags[E.idx] ? "Unflag" : "Flag for review"}</button></div>
+    ${q.src ? `<p class="small muted">From your repository: <a href="${esc(q.src.url)}" target="_blank" rel="noopener">${esc(q.src.title)}</a>${q.src.status !== "Verified" ? ` · <span class="pill warn">${esc(q.src.status || "Unverified")}</span>` : ""}</p>` : ""}
     <p class="qtext">${esc(q.q)}</p>
     ${E.strict && E.tabSwitches ? `<p class="warnbox">You left the exam window ${E.tabSwitches} time${E.tabSwitches > 1 ? "s" : ""}. In the actual Bar, the exam software logs this.</p>` : ""}
     <label class="label" for="ans">Answer booklet</label>
@@ -327,21 +355,21 @@ document.addEventListener("visibilitychange", () => {
 function finishExam() {
   clearInterval(tick);
   const E = S.exam;
-  S.report = { subject: E.subject, answers: E.answers, tabSwitches: E.tabSwitches, minutes: E.minutes,
+  S.report = { subject: E.subject, qs: E.qs || BANK[E.subject], answers: E.answers, tabSwitches: E.tabSwitches, minutes: E.minutes,
     usedMs: Math.min(E.minutes * 60000, Date.now() - (E.endAt - E.minutes * 60000)), grades: E.answers.map(() => null) };
   S.exam = null; S.view = "report"; confirmSubmit = false; save(); render(); window.scrollTo(0, 0);
 }
 
 /* ---------- Report ---------- */
 function reportTotal() {
-  const R = S.report, qs = BANK[R.subject];
+  const R = S.report, qs = R.qs || BANK[R.subject];
   if (R.grades.some(g => g == null)) return null;
   const got = R.grades.reduce((a, g) => a + g.score, 0), max = qs.reduce((a, q) => a + q.pts, 0);
   return got / max * 100;
 }
 
 function renderReport() {
-  const R = S.report, s = subj(R.subject), qs = BANK[R.subject], total = reportTotal();
+  const R = S.report, s = subj(R.subject), qs = R.qs || BANK[R.subject], total = reportTotal();
   const graded = R.grades.filter(Boolean).length;
   app.innerHTML = `
   <header class="mast">
@@ -373,7 +401,7 @@ function renderReport() {
           ${g.missed?.length ? `<div><strong class="small">Missed or weak</strong><ul>${g.missed.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : ""}
           ${g.model ? `<details><summary>Suggested answer</summary><p class="key">${esc(g.model)}</p></details>` : ""}
         </div>` : `<div class="row ai" data-i="${i}"></div>`}
-      <details><summary>Examiner's note</summary><p class="key">${esc(q.key)}</p></details>
+      <details><summary>${q.src ? "Model answer from Notion" : "Examiner's note"}</summary><p class="key">${esc(q.key)}</p>${q.src ? `<p class="small"><a href="${esc(q.src.url)}" target="_blank" rel="noopener">Open in Notion</a></p>` : ""}</details>
       <div class="row small"><label for="self${i}">Score it yourself</label>
         <input type="number" id="self${i}" class="score-in" min="0" max="${q.pts}" step="0.5" value="${g ? g.score : ""}"> <span class="muted">/ ${q.pts}</span>
         <button data-self="${i}">Save score</button></div>
@@ -393,6 +421,57 @@ function renderReport() {
 function postScore() {
   const t = reportTotal();
   if (t != null) S.scores[S.report.subject] = Math.round(t * 10) / 10;
+}
+
+/* ---------- Notion source (mcp capability) ---------- */
+function notionError(e) {
+  const c = e?.code;
+  if (c === "no_mcp") return "Notion can't be reached from this view. Using the built-in set.";
+  if (c === "server_not_connected" || c === "needs_reauth") return "Connect Notion in claude.ai Settings → Connectors, then try again. Using the built-in set for now.";
+  if (c === "not_in_manifest" || c === "approval_required") return "Notion access was not allowed for this page. Using the built-in set.";
+  if (c === "empty") return e.message;
+  return "Notion did not answer. Using the built-in set; try again in a moment.";
+}
+
+function parseNotionPage(p) {
+  const text = String(p?.text || "");
+  let props = {};
+  try { props = JSON.parse((text.match(/<properties>\s*([\s\S]*?)\s*<\/properties>/) || [])[1] || "{}"); } catch {}
+  const body = (text.match(/<content>([\s\S]*?)<\/content>/) || [])[1] || "";
+  const strip = t => t.replace(/<empty-block\/>/g, "").replace(/<\/?(summary|details)[^>]*>/g, "")
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, "$1").replace(/\*\*|\\(?=[$*_\[\]])/g, "").replace(/^\t+/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+  const qm = body.match(/##\s*Question\s*\n([\s\S]*?)(?=<details>|\n---|$)/);
+  const am = body.match(/<details>([\s\S]*?)<\/details>/);
+  return { props, question: qm ? strip(qm[1]) : "", answer: am ? strip(am[1]).replace(/^▸?\s*Doctrine & Model Answer[^\n]*\n?/, "") : "" };
+}
+
+async function notionQuestions(id) {
+  await mcpReady;
+  if (!mcp) throw { code: "no_mcp" };
+  const want = NOTION.subjects[id], okStatus = S.includeReview ? ["Verified", "Needs Review"] : ["Verified"];
+  const hits = new Map();
+  for (const subjectName of want) {
+    const r = await mcp.callTool(NOTION.server, "notion-search", { query: subjectName, data_source_url: NOTION.ds, page_size: 25, max_highlight_length: 0 });
+    for (const h of r?.payload?.results || []) if (h.type === "page" && !hits.has(h.id)) hits.set(h.id, h);
+  }
+  const ids = [...hits.keys()].sort(() => Math.random() - .5);
+  const picked = [];
+  for (let i = 0; i < ids.length && picked.length < S.count; i += 6) {
+    const pages = await Promise.all(ids.slice(i, i + 6).map(pid =>
+      mcp.callTool(NOTION.server, "notion-fetch", { id: pid }, { cache: { staleTime: 60000 } }).then(r => r.payload).catch(() => null)));
+    for (const p of pages) {
+      if (!p || picked.length >= S.count) continue;
+      const { props, question, answer } = parseNotionPage(p);
+      if (!want.includes(props.Subject) || !okStatus.includes(props.Status) || question.length < 40 || !answer) continue;
+      picked.push({ q: question, key: answer, src: { title: props.Question || p.title || "Notion question", url: props.url || p.url, status: props.Status, track: props.Track } });
+    }
+  }
+  if (!picked.length) throw { code: "empty", message: `No ${okStatus.join(" or ")} ${want.join(" / ")} questions were found in your Notion repository. Using the built-in set.` };
+  const fill = BANK[id].slice(0, Math.max(0, S.count - picked.length));
+  if (fill.length) sourceNote = `Found ${picked.length} usable Notion question${picked.length > 1 ? "s" : ""} for this subject; ${fill.length} built-in question${fill.length > 1 ? "s" : ""} fill the rest.`;
+  const all = [...picked, ...fill.map(q => ({ q: q.q, key: q.key }))];
+  const base = Math.floor(100 / all.length), extra = 100 - base * all.length;
+  return all.map((q, i) => ({ ...q, pts: base + (i < extra ? 1 : 0) }));
 }
 
 /* ---------- Claude grading (sample capability) ---------- */
@@ -423,7 +502,7 @@ async function wireClaude() {
 }
 
 async function gradeOne(i, el, batch) {
-  const R = S.report, q = BANK[R.subject][i], a = R.answers[i], s = subj(R.subject);
+  const R = S.report, q = (R.qs || BANK[R.subject])[i], a = R.answers[i], s = subj(R.subject);
   const btn = el.querySelector("button"), note = el.querySelector("span");
   btn.disabled = true; note.textContent = "Claude is reading your answer…";
   if (!a.trim()) { R.grades[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [], model: "" }; postScore(); save(); if (!batch) render(); return true; }
@@ -434,7 +513,7 @@ Standard: the Supreme Court rewards competence over rote recall. Credit a correc
 QUESTION (${q.pts} points):
 ${q.q}
 
-EXAMINER'S NOTE (the issue and legal basis expected):
+EXAMINER'S NOTE (the issue and legal basis expected; if it is a model answer that is itself wrong in law, grade against the correct law and say so in the comment):
 ${q.key}
 
 EXAMINEE'S ANSWER:
