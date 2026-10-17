@@ -112,15 +112,348 @@ const SUBJECTS = [
 
 // Original practice questions. "key" is the examiner's note: the issue and the legal basis an answer should reach.
 const BANK = {
+  // 2025 Bar Examinations, Political and Public International Law: questions and the UP Bar Review Institute's suggested answers.
   pol: [
-    { pts: 25, q: "Police set up a night checkpoint along a national highway in Batangas. They flag down a closed van driven by Ramon and shine a flashlight inside; they see only sacks. Acting on what one officer later calls \"a hunch,\" they order Ramon to open the sacks and find ten kilos of marijuana.\n\nRamon moves to suppress the evidence. Rule on the motion.",
-      key: "" },
-    { pts: 25, q: "Samahan ng Maliliit na Negosyante, a regional political party with no sectoral affiliation, applies for registration under the party-list system. The COMELEC denies the application, citing Ang Bagong Bayani-OFW v. COMELEC, on the ground that only marginalized and underrepresented sectors may take part.\n\nIs the COMELEC correct?",
-      key: "" },
-    { pts: 25, q: "The President issues an executive order reorganizing a regulatory agency. Atty. Cruz, suing as a citizen and taxpayer, files a petition for certiorari and prohibition assailing the order. The Solicitor General moves to dismiss for lack of legal standing, pointing out that the order involves no disbursement of public funds.\n\nResolve the motion.",
-      key: "" },
-    { pts: 25, q: "The Ambassador of State X buys a beach house in La Union in his own name for weekend use. A Filipino neighbor sues him before the RTC to recover a strip of land that the house encroaches on. The Ambassador moves to dismiss, invoking diplomatic immunity.\n\nRule on the motion.",
-      key: "" },
+    {
+      "pts": 5,
+      "q": "ABC Construction Company was engaged by XYZ Group Inc. to build an eight-storey building with a height of 34.4 meters located behind the intended new airport in Bulacan. A month later, Ordinance No. 12345 was passed by the Sangguniang Panlalawigan of Bulacan, setting the height limit on the buildings to be constructed along the new airport to five storeys or a maximum height of 21.5 meters. After building five storeys, ABC Construction Company served a notice on XYZ Group Inc. that it can no longer build the sixth, seventh, and eighth floors of the building in view of Ordinance No. 12345. XYZ Group Inc. consequently assailed Ordinance No. 12345 for allegedly violating the non-impairment clause of the Constitution. Will the case prosper? Reason(s).",
+      "key": "No, the case will not prosper.\n\nThe non-impairment of contracts clause yields to the superior and legitimate exercise by the State of police power to promote the health, morals, peace, education, good order, safety, and general welfare of the people. Moreover, statutes in exercise of valid police power must be read into every contract.\n\nHere, Ordinance No. 12345 was passed to set height limits for buildings along new airports, evidently in the interest of public safety, and is an exercise of police power with which citizens and other affected persons are bound to comply. Being a valid exercise of police power, Ordinance No. 12345 cannot be said to violate the non-impairment clause. [Ortigas & Co. Ltd. v. Court of Appeals, G.R. No. 126102, Dec. 4, 2000; United BF Homeowner’s Association v. City Mayor, G.R. No. 141010, Feb. 7, 2007]",
+      "origin": "2025 Bar · Political and Public International Law · Q1",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "non-impairment police power",
+      "cases": [
+        {
+          "title": "Ortigas & Co. Ltd. v. Court of Appeals, G.R. No. 126102 (2000)",
+          "url": "https://lawphil.net/judjuris/juri2000/dec2000/gr_126102_2000.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "United BF Homeowners Association v. City Mayor, G.R. No. 141010 (2007)",
+          "url": "https://lawphil.net/judjuris/juri2007/feb2007/gr_141010_2007.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "The XYZ Church was a relatively new religious group with fast-growing membership. On January 22, 2025, ABC News published an investigative report revealing that the leader of XYZ Church, Father Z, was actually the head of an underground syndicate and a notorious swindler who was convicted of fraud charges in the United States of America. The published report caused great agitation to XYZ Church followers who threatened to harm ABC News, destroyed its properties, and mauled the vendors who were selling copies of its newspaper containing the report. Reacting to this spate of violence, Secretary of Justice X, on national television, prohibited ABC News and other newspapers from re-publishing the questioned report or they shall face charges in court. ABC News assailed the prohibition, claiming that the same constitutes prior restraint against speech. Is the challenge correct? Reason(s).",
+      "key": "Yes, the challenge is correct.\n\nPrior restraints and content-based regulations bear a presumption of unconstitutionality: to be valid, (1) the restriction must pass the clear and present danger test, and (2) the incidental restriction on speech must be the least restrictive means available. [Chavez v. Gonzales, G.R. No. 168338, Feb. 15, 2008.] Such clear and present danger means that the speech must be directed at inciting or producing imminent lawless action. [Calleja v. Executive Secretary, G.R. No. 252578, Dec. 7, 2021]\n\nIn this case, the Secretary of Justice is not imposing sanctions for the already published investigative report but placing a prohibition on its re-publication. This effectively censors news outlets and threatens them with litigation, before they perform an action covered by the freedom of speech or the press, with relation to the expose on XYZ Church. Further, the report was not directed to inciting imminent lawless action, and even if it did result in a violent response from XYZ Church, the latter can be addressed without restricting the republication of the report, e.g., by prosecuting those who commit acts of violence. Hence, the Secretary of Justice’s prohibition is unconstitutional.",
+      "origin": "2025 Bar · Political and Public International Law · Q2",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "prior restraint",
+      "cases": [
+        {
+          "title": "Chavez v. Gonzales, G.R. No. 168338 (2008)",
+          "url": "https://lawphil.net/judjuris/juri2008/feb2008/gr_168338_2008.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Calleja v. Executive Secretary, G.R. No. 252578 (2021)",
+          "url": "https://lawphil.net/judjuris/juri2021/dec2021/gr_252578_2021.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "The Congress submitted to the President, for his signature, the enrolled bill seeking to decriminalize adultery and concubinage. Immediately thereafter, members of the XYZ Partylist filed a petition for certiorari to nullify the enrolled bill for allegedly violating the due process clause since the same was passed by the Congress without the benefit of a public hearing. The Office of the Solicitor General (OSG) moved to dismiss the petition on the ground that there is yet no actual case to speak of. Is the OSG correct? Reason(s).",
+      "key": "Yes, the OSG is correct.\n\nThe requisites of the exercise of the power of review are: (1) there must be an actual controversy; (2) the constitutionality of the issue is brought at the earliest opportunity; (3) the petitioner has legal standing to sue; (4) the issue of constitutionality is the very lis mota of the case.\n\nHere, the enrolled bill seeking to decriminalize adultery and concubinage was still under consideration of the President and has not been signed into law. Section 1 of Article VIII provides that judicial power includes the duty of the courts of justice to settle actual controversies involving rights which are legally demandable and enforceable, and to determine whether or not there has been a grave abuse of discretion amounting to lack or excess of jurisdiction on the part of any branch or instrumentality of the Government. Since there is no apparent justiciable issue, the petition must be dismissed. [See Montesclaros v. Commission on Elections, G.R. No. 152295, July 9, 2002]\n\nALTERNATIVE ANSWER:\n\nYes, the OSG is correct.\n\nA law may be validly enacted even assuming the absence of public consultation. The legislative process in the Constitution does not require such consultations, and hence the “[p]enalty for failure on the part of the government to consult could only be reflected in the ballot box and would not nullify government action.” [Council of Teachers v. Secretary of Education, G.R. No. 216930, Oct. 9, 2018]\n\nSince the absence of a public hearing would not nullify the enrolled bill, XYZ Partylist’s petition for certiorari is invalid.",
+      "origin": "2025 Bar · Political and Public International Law · Q3",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "actual case controversy",
+      "cases": [
+        {
+          "title": "Montesclaros v. COMELEC, G.R. No. 152295 (2002)",
+          "url": "https://lawphil.net/judjuris/juri2002/jul2002/gr_152295_2002.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Council of Teachers and Staff of Colleges and Universities v. Secretary of Education, G.R. No. 216930 (2018)",
+          "url": "https://lawphil.net/judjuris/juri2018/oct2018/gr_216930_2018.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "In 2022, A started an investment company while he was in France, during which, he allegedly embezzled funds amounting to EUR 25 million before absconding and returning to the Philippines in 2023 where he again was said to have acquired, through fraud, PHP 13 million from various investors. As a result, criminal proceedings in France were instituted against A in 2024. No similar criminal proceedings though were instituted in the Philippines. To legally try A for his crime, the French government sought the extradition of A to France, arguing that the Philippines had an obligation to either extradite or prosecute A. France argued that since the Philippines has not yet prosecuted A, it now has an obligation to extradite under international law despite the absence of an extradition treaty between France and the Philippines. Is France correct? Reason(s).",
+      "key": "SUGGESTED ANSWER #1:\n\nNo, France is not correct.\n\nExtradition is an obligation that arises from treaty law, not customary international law. As the Supreme Court has previously held, “[t]he right of a state to successfully request the extradition of a criminal offender arises from a treaty with the requested state.” [Government of Hongkong-SAR v. Muñoz, G.R. No. 207342, Aug. 16, 2016]\n\nSince France does not have an extradition treaty with the Philippines, the Philippines has no obligation to extradite A. The choice between either extradition or prosecution which France asserts has no legal basis.\n\nSUGGESTED ANSWER #2:\n\nNo, France is wrong.\n\nWhile the obligation to extradite or prosecute may be a conventional or treaty obligation of states, there is no customary international obligation of aut dedere aut judicare. In any case, cases decided by the International Court of Justice only consider the customary obligation in those involving erga omnes obligations or those obligations owed to the international community as a whole.\n\nSince there is no extradition treaty, and prosecuting or extraditing a person charged with embezzlement is not an erga omnes obligation, the Philippines is not obliged to extradite person A.",
+      "origin": "2025 Bar · Political and Public International Law · Q4",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "extradition treaty",
+      "cases": [
+        {
+          "title": "Government of Hongkong SAR v. Muñoz, G.R. No. 207342 (2016)",
+          "url": "https://lawphil.net/judjuris/juri2016/aug2016/pdf/gr_207342_2016.pdf",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "In 2014, A and B, both Filipino citizens, met at the XYZ Hospital in Taguig City where they both worked as nurses. After dating for a year, they got married. Eventually, A flew to the United States of America (USA) to work in a hospital in New York City. On the other hand, B continued working at the XYZ Hospital until he also got hired as a nurse in the same hospital where A was working in New York City. During A and B’s stay in the USA, A got naturalized as an American citizen and, later on, gave birth to their child, baby C, in 2024. Is baby C a Filipino citizen? Reason(s).",
+      "key": "Yes, baby C is a Filipino citizen.\n\nUnder the Constitution, those whose father or mother is a citizen of the Philippines are themselves Filipino citizens, regardless of the place of birth. [Art. IV, Sec. 1(2)] This reflects the principle of jus sanguinis (citizenship by blood), which the Philippines adheres to and not jus soli (citizenship by birthplace). Philippine law further allows for dual citizenship, in cases where foreign law grants another citizenship to a Filipino.\n\nIn this case, although baby C was born in the United States in 2024, both A and B were Filipino citizens at the time of their marriage and migration. Here, while A was naturalized as an American citizen, B appears to remain a Filipino citizen notwithstanding his move to the United States. [See Commonwealth Act No. 63 (1936)] Therefore, baby C—being born to at least one Filipino parent—is considered a Filipino citizen from birth.",
+      "origin": "2025 Bar · Political and Public International Law · Q5",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "citizenship jus sanguinis",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "On April 24, 2025, the Treaty of Copenhagen, an international agreement among various states fortifying their commitment to address climate change, was signed by the Secretary of Foreign Affairs as the duly authorized signatory of the Philippines. Thereafter, the treaty was transmitted to the President for ratification. After reviewing the terms of the treaty, the President decided not to ratify the same. Consequently, X, a passionate environmentalist, filed a petition for mandamus to compel the President to ratify and transmit the signed copy of the Treaty of Copenhagen to the Senate for its concurrence. Will the petition prosper? Reason(s).",
+      "key": "No, the petition will not prosper.\n\nThe President is the chief architect of foreign policy. As such, he has the power to ratify a treaty, subject to the concurrence of the Senate. It is within his discretionary authority to refuse to submit a treaty to the Senate, or having secured its consent for its ratification, refuse to ratify it. [Pimentel v. Executive Secretary, G.R. No. 158088, July 6, 2005.] Meanwhile, mandamus is available to compel the performance of a ministerial act, or one that does not rest on the discretion of the respondent.\n\nThe transmittal of the Treaty of Copenhagen for Senate concurrence is within the executive discretion of the President and is not his ministerial duty. Therefore, the petition for mandamus will not prosper.",
+      "origin": "2025 Bar · Political and Public International Law · Q6",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "treaty ratification mandamus",
+      "cases": [
+        {
+          "title": "Pimentel v. Office of the Executive Secretary, G.R. No. 158088 (2005)",
+          "url": "https://lawphil.net/judjuris/juri2005/jul2005/gr_158088_2005.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "Given the increasing number of foreigners residing in ABC City, its Sangguniang Panlungsod issued Ordinance No. 0628, allowing foreigners who have resided for at least five years in the City to acquire ownership over parcels of land not exceeding 500 square meters. A concerned Filipino citizen residing in ABC City filed a petition for certiorari, challenging Ordinance No. 0628 for violating the constitutional prohibition against land ownership by foreigners. ABC City, on the other hand, argued that it was granted local autonomy within its jurisdiction and can therefore pass any ordinance it deems beneficial to its residents. Decide with reason(s).",
+      "key": "Ordinance No. 0628 is unconstitutional.\n\nUnder the Constitution and insofar as individuals are concerned, only citizens of the Philippines may own land. [Art. XII, Secs. 3 & 7] Furthermore, one of the requisites for a valid ordinance is that it cannot violate the Constitution. [White Light v. City of Manila, G.R. No. 122846, Jan. 20, 2009] This is because “local government units, while empowered to enact local legislation for the general welfare of their constituents, remain mere agents of the State.” [City of Batangas v. JG Summit Petrochemical, G.R. No. 190266, Mar. 15, 2023]\n\nOrdinance No. 0628 cannot contradict the prohibition on foreign ownership of lands, for while the Constitution grants local governments autonomy, this autonomy cannot be interpreted to grant it powers beyond even what Congress, through the Local Government Code, or other laws, can delegate. In this case, Ordinance No. 0628 is a direct violation of provisions of the Constitution on land ownership and so must be struck down.",
+      "origin": "2025 Bar · Political and Public International Law · Q7",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "foreign ownership of land ordinance",
+      "cases": [
+        {
+          "title": "White Light Corp. v. City of Manila, G.R. No. 122846 (2009)",
+          "url": "https://lawphil.net/judjuris/juri2009/jan2009/gr_122846_2009.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "City of Batangas v. JG Summit Petrochemical Corp., G.R. Nos. 190266-67 (2023)",
+          "url": "https://lawphil.net/judjuris/juri2023/mar2023/gr_190266-67_2023.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "President X signed into law Republic Act No. 1213, which set fixed rates for the just compensation of properties across various regions of the Philippines in order to expedite the resolution of expropriation cases and to prevent lengthy and costly litigation. One of the affected landowners, Y, challenged the constitutionality of Republic Act No. 1213, asserting that the determination of just compensation is not a legislative function. The Republic of the Philippines, represented by the Office of the Solicitor General (OSG), countered that since expropriation is an exercise of the power of eminent domain belonging to the legislature, just compensation may be fixed by law. Decide with reason(s).",
+      "key": "Y’s challenge is correct.\n\nThe determination of just compensation is a judicial function. [Export Processing Zone Authority v. Dulay, G.R. No. L-59603, Apr. 29, 1987] While Congress may provide formulas for the computation of just compensation, these are not binding on the courts.\n\nIn this case, Republic Act No. 1213 fixes compensation through set rates to expedite expropriation cases, removing the case-by-case valuation that should be performed by courts. Therefore, the method of ascertaining just compensation under the Republic Act No. 1213 constitutes an impermissible encroachment on judicial prerogatives.",
+      "origin": "2025 Bar · Political and Public International Law · Q8",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "just compensation judicial function",
+      "cases": [
+        {
+          "title": "Export Processing Zone Authority v. Dulay, G.R. No. L-59603 (1987)",
+          "url": "https://lawphil.net/judjuris/juri1987/apr1987/gr_l-59603_1987.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "The Municipality of ABC passed Ordinance No. 1613, known as the “Speed Limit Ordinance.” It prescribed speed limits for all types of vehicles and penalties for violations thereof, such as a fine of PHP 1,000.00 for the first offense, PHP 1,500.00 for the second offense, and PHP 2,000.00 or 30-day imprisonment or both for the third offense. X, a resident of the Municipality of ABC, assailed the constitutionality of Ordinance No. 1613 because it was not published in a newspaper of general circulation, hence, violative of the due process clause. While the Municipality of ABC admitted there was no publication, it asserted that since Ordinance No. 1613 was posted in three conspicuous places, the requirement of due process was deemed satisfied. Decide with reason(s).",
+      "key": "SUGGESTED ANSWER #1:\n\nX is correct that Ordinance No. 1613 is unconstitutional for violating the right to due process.\n\nThe “omission of publication of laws is tantamount to denying the public of knowledge and information of the laws that govern it; hence, a violation of due process.” [Villafuerte v. Cordial, G.R. No. 222450, July 7, 2020] Notably, under Section 511 of the Local Government Code, ordinances with penal sanctions “shall also be published in a newspaper of general circulation, where available, within the territorial jurisdiction of the local government unit concerned, except in the case of barangay ordinances.”\n\nHere, while the Municipality of ABC posted the ordinances, the Ordinance was not at all published in any newspaper of general circulation, and the owners and drivers of all vehicles traversing along the areas covered by the Ordinance were not properly informed of the prescribed speed limits thereunder. [See Municipality of Tupi v. Faustino, G.R. No. 231896, Aug. 20, 2019] Hence, the Ordinance is unconstitutional.\n\nALTERNATIVE ANSWER:\n\nABC is correct that due process was satisfied.\n\nThe Local Government Code does not make it indispensable for local ordinances to be published in newspapers of general circulation, especially where there is no such publication in the locality. “In the absence of any newspaper of general circulation within the province, posting of such ordinances shall be made in all municipalities and cities of the province where the sanggunian of origin is situated.” [See Local Government Code, Sec. 59(c)]\n\nIf there was no newspaper of general circulation in the municipality, then the non-publication of the Ordinance did not violate due process.",
+      "origin": "2025 Bar · Political and Public International Law · Q9",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "publication of ordinance",
+      "cases": [
+        {
+          "title": "Villafuerte v. Cordial, Jr., G.R. No. 222450 (2020)",
+          "url": "https://lawphil.net/judjuris/juri2020/jul2020/gr_222450_2020.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Municipality of Tupi v. Faustino, G.R. No. 231896 (2019)",
+          "url": "https://lawphil.net/judjuris/juri2019/aug2019/gr_231896_2019.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "President X constituted the National Independence Commission (NIC), an ad hoc body tasked with the preparation of the celebrations for the 127th Philippine Independence Day; and appointed Mr. Y as its Chairperson. Subsequently, Mr. Y was charged with violation of Republic Act No. 3019 or the Anti-Graft and Corrupt Practices Act for alleged irregularities committed in his capacity as NIC Chairperson. In his defense, Mr. Y claimed that he never received any compensation as NIC Chairperson, thus, he could not be considered as a public officer. Is Mr. Y correct? Reason(s).",
+      "key": "No, Mr. Y is not correct.\n\nIn defining public officers, what is controlling is whether the person is invested with some form of sovereign function, and is exercising the same in the public interest,\n\nthrough government bodies or institutions. Compensation is thus not an indispensable qualification for determining whether a person is a public office. Under R.A. 3019, even those receiving only nominal compensation are considered public officers.\n\nIn this case, Mr. Y was appointed as the Chairperson of the NIC, a body created by the government to oversee the public function of the country’s celebration of the 12th Philippine Independence Day. He is therefore a public officer covered by R.A. 3019. [Laurel v. Desierto, G.R. No. 145368, Apr. 12, 2002]",
+      "origin": "2025 Bar · Political and Public International Law · Q10",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "public officer compensation",
+      "cases": [
+        {
+          "title": "Laurel v. Desierto, G.R. No. 145368 (2002)",
+          "url": "https://lawphil.net/judjuris/juri2002/apr2002/gr_145368_2002.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "X, an independent candidate, filed her Certificate of Candidacy (COC) for Mayor of Butuan City for the 2025 National and Local Elections. Y also filed her COC for the same position. After the last day of filing COCs, X withdrew her COC for Mayor of Butuan City and opted to run for Vice Mayor instead. She was substituted by Z who filed her COC for Mayor of Butuan City. Y challenged the substitution on the ground that since X is an independent candidate, she cannot be substituted. Is the challenge correct? Reason(s).",
+      "key": "Yes, the challenge is correct.\n\nUnder the Omnibus Election Code, the right to field a substitute candidate is reserved to duly registered political parties. [Section 77] Independent candidates, by definition, do not belong to any political party, and therefore no party can nominate a substitute for them. Allowing substitution in such cases would undermine the integrity of the electoral process and open the door to circumvention of candidacy rules.\n\nIn this case, X is an independent candidate and thus not a member of a political party. Since she does not belong to any registered political party, she cannot be substituted by Z. [Engle v. COMELEC, G.R. No. 215995, Jan. 19, 2016]",
+      "origin": "2025 Bar · Political and Public International Law · Q11",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "substitution of candidates",
+      "cases": [
+        {
+          "title": "Engle v. COMELEC, G.R. No. 215995 (2016)",
+          "url": "https://lawphil.net/judjuris/juri2016/jan2016/gr_215995_2016.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A was a rider for one of the largest online shopping platforms in the Philippines. She collected several parcels from XYZ Retail Store for delivery to the customers. She immediately noticed though the unique smell emanating from the parcels but chose to ignore the same. While she was driving, a stray dog suddenly crossed the road, prompting her to hit the brakes hard. As a result, one of the parcels fell and burst, revealing several grams of dried cannabis (marijuana). A reported the incident to the nearby police station. Consequently, the owner of XYZ Retail Store, B, was charged with illegal sale of dangerous drugs. In his defense, B invoked his right against unreasonable search and seizure which A allegedly violated when the latter mishandled the parcel. Is B correct? Reason(s).",
+      "key": "No, B is not correct.\n\nThe constitutional proscription against unlawful searches and seizures applies as a restraint directed only against the government and its agencies tasked with the enforcement of the law. Thus, it could only be invoked against the State to whom the restraint against the arbitrary and unreasonable exercise of power is imposed. [People v. Marti, G.R. No. 81561, Jan. 18, 1991; Cadajas v. People, G.R. No. 247348, Nov. 16, 2021]\n\nHere, A, the rider for an online shopping platform, is a private person and not an agent of the government. B, therefore cannot invoke the constitutional protection of the right against unreasonable searches and seizures.",
+      "origin": "2025 Bar · Political and Public International Law · Q12",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "search by private individual",
+      "cases": [
+        {
+          "title": "People v. Marti, G.R. No. 81561 (1991)",
+          "url": "https://lawphil.net/judjuris/juri1991/jan1991/gr_81561_1991.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Cadajas v. People, G.R. No. 247348 (2021)",
+          "url": "https://lawphil.net/judjuris/juri2021/nov2021/gr_247348_2021.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "During the campaign period for the 2025 National and Local Elections, political unrest in the Province of XYZ led to a shootout between private armies in front of the provincial capital. Thirty people, including innocent bystanders, were among the casualties. In response, President Z declared a state of emergency in the Province of XYZ and issued a directive for the Armed Forces of the Philippines (AFP) and the Philippine National Police (PNP) to prevent and suppress all incidents of lawless violence in the said province. Governor X questioned President Z’s directive for alleged lack of proper authority from the Congress. Is the challenge meritorious? Reason(s).",
+      "key": "No, the challenge is not meritorious.\n\nA declaration of a state of emergency is within the President’s authority, falling within his “calling out” power to prevent or suppress lawless violence. In such a case, the President does not require proper authorization from Congress. In contrast, the exercise of emergency powers by the President under Article VI, Section 23(2) of the Constitution requires a prior declaration and delegation by Congress. [See Ampatuan v. Puno, G.R. No. 190259, June 7, 2011]\n\nHere, the President declared a “State of Emergency,” not the exercise of emergency powers. As this declaration is simply an exercise of his commander-in-chief powers under Article VII, Section 18 of the Constitution to call out such armed forces to prevent or suppress lawless violence, it requires no delegation from Congress. [David v. Macapagal-Arroyo, G.R. No. 171396, May 3, 2006] The President’s declaration and directive are therefore valid.",
+      "origin": "2025 Bar · Political and Public International Law · Q13",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "calling out power state of emergency",
+      "cases": [
+        {
+          "title": "Ampatuan v. Puno, G.R. No. 190259 (2011)",
+          "url": "https://lawphil.net/judjuris/juri2011/jun2011/gr_190259_2011.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "David v. Macapagal-Arroyo, G.R. No. 171396 (2006)",
+          "url": "https://lawphil.net/judjuris/juri2006/may2006/gr_171396_2006.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "Taking notice of the popularity, both here and abroad, of the unique perfume called Scent of Silay produced by XYZ Fragrance Company located in Silay City, Negros Occidental, the Sangguniang Panlungsod of Silay City passed Ordinance No. 12345, imposing a tax equivalent to 1% per export sale on “all productions of Scent of Silay by XYZ Fragrance Company”. XYZ Fragrance Company assailed Ordinance No. 12345 on the ground that the same violated its right to equal protection of laws as it was singled out therein. Decide with reason(s).",
+      "key": "XYZ Fragrance Company is correct.\n\nThe equal protection clause applies only to persons or things identically situated and does not bar a reasonable classification of the subject of legislation, and a classification is reasonable where: (1) it is based on substantial distinctions which make real differences; (2) these are germane to the purpose of the law; (3) the classification applies not only to present conditions but also to future conditions which are substantially identical to those of the present; (4) the classification applies only to those who belong to the same class.\n\nIn this case, XYZ Fragrance Company is singled out by the Sangguniang Panlungsod of Silay City when it passed Ordinance No. 12345, expressly stating in the Ordinance that it will impose tax on the export sale on all productions of Scent of Silay by XYZ Fragrance Company. As the Ordinance does not consider future conditions wherein other fragrance companies may be established, it violates the third requisite of the equal protection clause and is unconstitutional. [Ormoc Sugar Co. v. Treasurer of Ormoc City, G.R. No. L-23794, Feb. 17, 1968]",
+      "origin": "2025 Bar · Political and Public International Law · Q14",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "equal protection classification",
+      "cases": [
+        {
+          "title": "Ormoc Sugar Co. v. Treasurer of Ormoc City, G.R. No. L-23794 (1968)",
+          "url": "https://lawphil.net/judjuris/juri1968/feb1968/gr_l-23794_1968.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A owned three condominium units located near Camp Aguinaldo along EDSA. In 2020, A leased the three condominium units to the government for the use of its military officials, X, Y, and Z, as their offices for a period of three years. In 2024, A sued X, Y, and Z to recover possession of the condominium units because their respective leases had expired and they refused to vacate the premises despite demands. A also prayed for payment of rent in arrears. X, Y, and Z moved to dismiss the case for lack of jurisdiction on the ground of state immunity from suit. A countered that the lease contracts were commercial contracts, not falling within the doctrine of state immunity from suit. Is A correct? Reason(s).",
+      "key": "SUGGESTED ANSWER #1:\n\nNo, A is incorrect.\n\nThe doctrine of state immunity applies for as long as the government and its agents act in the exercise of their sovereign functions, or jus imperii. This is in contrast to when states enter into jus gestionis or commercial transactions. [United States v. Ruiz, G.R. No. L-35645, May 22, 1985]\n\nIn this case, the military was using the condominium units as offices, making the leases transactions entered into for the purpose of its public functions. They are not commercial contracts which would constitute a waiver of state immunity.\n\n[For the Examiner: Please consider points for candidates who make the following observation.] Nevertheless, while the doctrine of state immunity would normally apply, it cannot be used as an instrument to perpetrate an injustice on a citizen. State immunity is limited by the principle that no person shall be deprived of life, liberty, or property without due process of law. [Philippine Navy Gold Club, Inc. v. Abaya, G.R. No. 235619, July 13, 2020] Here, the government has taken the private property of a citizen for public use without paying just compensation. A is therefore entitled to recover possession and to the back payment of rentals from the military.\n\nSUGGESTED ANSWER #2:\n\nYes, A is correct.\n\nUnder the doctrine of state immunity, the State may not be sued without its consent. [Constitution, Art. XVI, Sec. 3] However, jurisprudence has long recognized a distinction between acts done in the exercise of sovereign functions (jure imperii) and those undertaken in a proprietary or commercial capacity (jure gestionis). [United States v. Ruiz, G.R. No. L-35645, May 22, 1985] When the government enters into\n\nprivate contracts, such as lease agreements for office space, it descends to the level of a private party and is deemed to have impliedly waived its immunity from suit. Further, the doctrine of governmental immunity from suit cannot serve as an instrument for perpetrating an injustice on a citizen. [See Ministerio v. Court of First Instance of Cebu, G.R. No. L-31635, Aug. 31, 1971]\n\nIn this case, the lease contracts entered into by the government were commercial in nature, falling under the category of jure gestionis. A leased her condominium units to the government for use as offices by military officials. This arrangement is not inherently governmental—it does not involve the exercise of police power, military command, or any sovereign prerogative. It is a private lease contract, and the refusal of X, Y, and Z to vacate after expiration of the lease gives rise to a civil dispute, not a protected governmental act.\n\nTherefore, the motion to dismiss on the ground of state immunity should be denied, and the case should proceed.",
+      "origin": "2025 Bar · Political and Public International Law · Q15",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "state immunity from suit",
+      "cases": [
+        {
+          "title": "United States v. Ruiz, G.R. No. L-35645 (1985)",
+          "url": "https://lawphil.net/judjuris/juri1985/may1985/gr_l-35645_1985.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Philippine Navy Golf Club, Inc. v. Abaya, G.R. No. 235619 (2020)",
+          "url": "https://lawphil.net/judjuris/juri2020/jul2020/gr_235619_2020.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Ministerio v. Court of First Instance of Cebu, G.R. No. L-31635 (1971)",
+          "url": "https://lawphil.net/judjuris/juri1971/aug1971/gr_31635_1971.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "The President appointed A as Chairperson, and B, C, D, and E as Commissioners, of the Commission on Human Rights. Their appointments stated that they may qualify and enter upon the performance of the duties of their respective offices. Later on, a petition for certiorari and prohibition was filed, questioning the permanent appointments of A, B, C, D, and E for lack of confirmation by the Commission on Appointments. Is the challenge correct? Reason(s).",
+      "key": "No, the challenge is not correct.\n\nThe Commission on Appointments’ participation in the appointing process is limited only to “heads of the executive departments, ambassadors, other public ministers and consuls, or officers of the armed forces from the rank of colonel or naval captain, and other officers whose appointments are vested in [the President] in this Constitution.” [Constitution, Art. VII, Sec. 16] Other presidential appointments, such as those provided by law, need not secure the confirmation of the Commission on Appointments.\n\nIn this case, the Commission on Human Rights (CHR) is not one of the three independent constitutional commissions. Its members are also not listed in the first category of officers in Article VII, Section 16 of the Constitution. Instead, the appointment of the chairperson and commissioners of the CHR is granted to the President only by law. Therefore, the appointments of A, B, C, D, and E are valid\n\nnotwithstanding lack of confirmation. [Bautista v. Senator Salonga, G.R. No. 86439, Apr. 13, 1989]",
+      "origin": "2025 Bar · Political and Public International Law · Q16",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "Commission on Appointments",
+      "cases": [
+        {
+          "title": "Bautista v. Salonga, G.R. No. 86439 (1989)",
+          "url": "https://lawphil.net/judjuris/juri1989/apr1989/gr_86439_1989.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "Before commencing the proceedings in her court for the day, Judge A would require all the litigants and the lawyers in the courtroom to recite a prayer which she herself composed; otherwise they will be cited in contempt. B, an atheist, believes that this court policy is a violation of the non-establishment clause in the Constitution. Is B correct? Reason(s).",
+      "key": "Yes, B is correct.\n\nThe Constitution provides that no law shall be made respecting an establishment of religion, or prohibiting the free exercise thereof. [Art. III, Sec. 5] The government cannot pass laws or perform acts which aid one religion, aid all religions, or prefer one religion over another. Also, no person can be punished for entertaining or professing religious beliefs or disbeliefs, for church attendance or non-attendance.\n\nIn this case, Judge A is compelling lawyers and litigants to recite a prayer she composed under threat of contempt. Judge A is an authority of the State, and her coercion that a prayer shall be recited with penalty for non-compliance is tantamount to favoring a religion and discriminating against/punishing non-believers by the State, which is exactly what the non-establishment clause prohibits. [See Estrada v. Escritor, A.M. P-02-1651, Aug. 4, 2006]",
+      "origin": "2025 Bar · Political and Public International Law · Q17",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "non-establishment clause",
+      "cases": [
+        {
+          "title": "Estrada v. Escritor, A.M. No. P-02-1651 (2006)",
+          "url": "https://lawphil.net/judjuris/juri2006/jun2006/am_p-02-1651_2006.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A, a popular actress, was accused of estafa. She filed a motion for news reporters to cover her trial on live television. Judge B denied the motion. A sought reconsideration, arguing that the denial of her motion violated the right of the public to information on matters of public concern and her right to public trial. Judge B still did not reconsider. He explained that public trial does not mean publicized trial. Decide with reason(s).",
+      "key": "Judge B may validly deny the motion for a televised trial.\n\nThe right to a public trial does not equate to a right to have a trial publicized or broadcast on live television or radio. A “public trial” only requires that court proceedings be open to those who wish to attend, ensuring transparency and\n\naccountability. Requests for live media coverage have been denied to protect the rights of the accused to due process and a fair trial, and to maintain the dignity of court proceedings.\n\nHere, Judge B's denial of the motion was consistent with the Constitution and Supreme Court decisions and is thus justified. [In re: Radio-TV Coverage of the Estrada Plunder Case, A.M. No. 01-4-03-SC, June 29, 2001]",
+      "origin": "2025 Bar · Political and Public International Law · Q18",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "live media coverage trial",
+      "cases": [
+        {
+          "title": "Re: Request for Radio-TV Coverage of the Estrada Plunder Trial, A.M. No. 01-4-03-SC (2001)",
+          "url": "https://lawphil.net/judjuris/juri2001/jun2001/am_01-4-03-sc_2001.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "On December 11, 2023, the Senate and the House of Representatives approved the Absolute Divorce Bill and transmitted the same to the Office of the President for signature. On December 20, 2023, President X vetoed the bill, citing a recent national survey which showed that majority of Filipinos do not support absolute divorce for being contrary to the teachings of the Catholic church. Representative Y, the author of the Absolute Divorce Bill, assailed the constitutionality of the veto for allegedly violating the principle of separation of powers as the President was deemed to have imposed his will on the legislature. Is Representative Y correct? Reason(s).",
+      "key": "No, Representative Y is not correct.\n\nUnder the Constitution’s presentment clause, every bill passed by the Congress shall, before it becomes a law, be presented to the President for his approval or veto. [Art. VI, Sec. 27(1)] Through this veto power, the Constitution makes the Chief Executive an integral part of the law-making process. The veto power allows the Chief Executive to reject a bill for reasons within his discretion, including policy considerations he considers essential, so long as the action is not arbitrary. Hence, the courts “will indulge every intendment in favor of the constitutionality of a veto.” [Belgica v. Ochoa, G.R. No. 208566, Nov. 19, 2013]\n\nIn this case, the veto exercised by President X over the Absolute Divorce Bill is a legitimate expression of his function under the Constitution: Congress is vested with the authority to pass bills, but at the same time, the President is given the right to approve or disapprove the same. It is then up to Congress to override the veto of the President if it is so minded. The President’s veto is thus consistent with this scheme and is not unconstitutional.\n\n[For the Examiner: Please consider points for answers that would argue the veto as unconstitutional for privileging a particular religion’s dogma in violation of the establishment clause. See Ang Ladlad LGBT Partylist v. Commission on Elections, G.R. No. 190582, Apr. 8, 2010.]",
+      "origin": "2025 Bar · Political and Public International Law · Q19",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "presidential veto",
+      "cases": [
+        {
+          "title": "Belgica v. Ochoa, G.R. No. 208566 (2013)",
+          "url": "https://lawphil.net/judjuris/juri2013/nov2013/gr_208566_2013.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Ang Ladlad LGBT Party v. COMELEC, G.R. No. 190582 (2010)",
+          "url": "https://lawphil.net/judjuris/juri2010/apr2010/gr_190582_2010.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "Pursuant to its power under Article VIII, Section 5(5) of the Constitution, the Supreme Court launched its Strategic Plan for Judicial Innovations 2022-2027 (SPJI). What are the four guiding principles and three target outcomes of the SPJI?",
+      "key": "The Supreme Court’s Strategic Plan for Judicial Innovations 2022-2027 (SPJI) is founded upon four guiding principles and aims to achieve three key outcomes.\n\nThe Four Guiding Principles are: 1. Timely and Fair Justice – Ensuring justice is delivered promptly and equitably to all parties. 2. Transparent and Accountable Justice – Promoting openness in judicial processes and accountability among court personnel. 3. Equal and Inclusive Justice – Guaranteeing access to justice regardless of socio-economic status or background. 4. Technology Adaptive Management – Modernizing court operations through the adoption of new technologies to increase efficiency and accessibility.\n\nThe Three Target Outcomes are: 1. Efficiency of Court Processes – Streamlining procedures and utilizing case management systems for faster case resolution. 2. Judicial Innovation– Fostering a future-ready judiciary through technology integration, digital transformation, and ongoing reform. 3. Access to Justice – Reducing barriers, strengthening legal aid, and building a judiciary accessible to all Filipinos, including marginalized sectors.\n\n[For the Examiner: Please consider answers that either identify or explain the above principles and outcomes.]",
+      "origin": "2025 Bar · Political and Public International Law · Q20",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "Strategic Plan for Judicial Innovations",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    }
   ],
   // 2025 Bar Examinations, Commercial and Taxation Laws: official questionnaire (September 7, 2025) with the UP Bar Review Institute's suggested answers.
   comtax: [
@@ -711,32 +1044,299 @@ const BANK = {
     { pts: 30, q: "Dina issued a postdated check to Eric in payment of a debt. The check bounced for insufficient funds. Without sending Dina a written notice of dishonor, Eric filed a complaint for violation of B.P. Blg. 22, arguing that Dina knew her account was nearly empty.\n\nWill the prosecution prosper?",
       key: "" },
   ],
+  // 2025 Bar Examinations, Remedial Law, Legal and Judicial Ethics with Practical Exercises: questions and the UP Bar Review Institute's suggested answers.
   rem: [
-    { pts: 20, q: "On June 2, Atty. Reyes received an RTC order denying his client's motion to dismiss. Without filing a motion for reconsideration, he filed a petition for certiorari under Rule 65 with the Court of Appeals on August 10.\n\nIdentify and resolve the procedural issues.",
-      key: "" },
-    { pts: 20, q: "In a collection suit against Delta Corp., the sheriff served summons by handing it to the receptionist at Delta's main office. Delta did not file an answer and was declared in default.\n\nDid the court acquire jurisdiction over Delta? What may Delta do?",
-      key: "" },
-    { pts: 20, q: "Victor was stabbed. In the hospital, gasping and bleeding heavily, he told his brother: \"I don't think I'll make it. It was Pedro who stabbed me.\" Victor died two hours later.\n\nIs the brother's testimony on Victor's statement admissible against Pedro in the murder case?",
-      key: "" },
-    { pts: 20, q: "Atty. Lim represented Spouses Tan in buying a lot from Mr. Uy and drafted the deed of sale. Two years later, Mr. Uy's company engages Atty. Lim to file an action to annul that same sale.\n\nMay Atty. Lim accept the engagement? Explain.",
-      key: "" },
-    { pts: 20, q: "Practical exercise. Liza lent Marco ₱1,800,000, payable in one year. Marco has not paid despite written demand. Liza also seeks 6% legal interest and ₱100,000 in attorney's fees.\n(a) Which court has jurisdiction? Is the case covered by the Rules on Small Claims?\n(b) Draft the jurisdictional allegations and the prayer of the complaint.",
-      key: "" },
+    {
+      "pts": 5,
+      "q": "Due to the rising number of killings which resulted from the implementation of the Oplan Krimen of the Philippine National Police (PNP), members of the Integrated Bar of the Philippines (IBP) Quezon City Chapter filed with the Court of Appeals a petition for the issuance of a writ of continuing mandamus. Through this writ of continuing mandamus, they sought to compel officials of the PNP to protect the people, prevent violations of the right to life, and conduct thorough investigations into the killings resulting from the implementation of Oplan Krimen. Is the petition proper? Reason(s).",
+      "key": "The petition for continuing mandamus will not prosper.\n\nThe current rule allowing for writs of continuing mandamus is A.M. No. 09-6-8-SC, or the Rules of Procedure for Environmental Cases. Writs of continuing mandamus are “issued by a court in an environmental case directing any agency or instrumentality of the government or officer thereof to perform an act or series of acts decreed by final judgment which shall remain effective until judgment is fully satisfied.” Thus, the writ of continuing mandamus is available only in environmental cases.\n\nHere, the petition that the IBP filed before the Court of Appeals is not an environmental case. The petition pertains to the rising number of killings that resulted from the implementation of the Oplan Krimen of the Philippine National Police. Thus, the writ of continuing mandamus, as formulated in A.M. No. 09-6-8-SC, will not cover the problem sought to be addressed by the petition filed by the IBP. (Baquirin v. dela Rosa, G.R. No. 233930, 11 July 2023)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q1",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "continuing mandamus",
+      "cases": [
+        {
+          "title": "Baquirin v. Dela Rosa",
+          "url": "https://app.notion.com/p/3f0fb2326e1f813cb7f9ec332873d55f",
+          "src": "registry"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "In 2022, the heirs of X filed with the Regional Trial Court (RTC)-Quezon City a complaint for recovery of ownership and damages involving a parcel of land they inherited from their father, X. The complaint alleged that the assessed value of the property was PHP 400,000.00. The RTC dismissed the complaint on the ground that the assessed value of the property was below its jurisdictional threshold. Is the RTC correct? Reason(s).",
+      "key": "The RTC is correct. Under R.A. No. 11576, which amended B.P. No. 129, the Municipal Trial Court has exclusive jurisdiction if the assessed value of the property does not exceed PHP 400,000.00. Since the assessed value of the property involved is exactly PHP 400,000.00, it is below the jurisdictional threshold of the RTC.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q2",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "jurisdiction assessed value",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "On behalf of her minor child C, A filed a complaint for support against B. In her complaint, A alleged that B was the biological father of her child, C. After due proceedings, the trial court granted A’s application for DNA testing. Based on the results thereof, the value of the Probability of Paternity between B and C is 99.9%. A offered in evidence the DNA results and rested her case. B claimed that since the Probability of Paternity is not 100% certain, the same cannot be given probative weight. Decide with reason(s).",
+      "key": "The contention of B is not correct. The DNA result must be given probative value by the Court. In evaluating the reliability of the DNA testing results, if the value of the Probability of Paternity is 99.9%, as in this case, or higher, there shall be a disputable presumption of paternity. In view of the 99.9% result, there is a probability of parentage, which means the numerical estimate for the likelihood of parentage of a putative parent compared with the probability of a random match of two unrelated individuals in a given population. (Rule on DNA Evidence, A.M. No. 06-11-5-SC, 15 October 2007)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q3",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "DNA evidence paternity",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "A filed a petition for correction of entry in her birth certificate, specifically her father’s name from X to Y. The petition impleaded as respondents the Local Civil Registrar of Quezon City and the Chairperson of the Philippine Statistics Authority. The Office of the Solicitor General moved to dismiss the petition for A’s failure to implead X, Y, her mother Z, and all her siblings who should be notified of the proceedings and given the opportunity to come forward and interpose their objections, if any. A opposed the motion, arguing that publication of the petition was sufficient notice to the world, including the aforenamed persons. Decide with reason(s).",
+      "key": "The motion of the Office of the Solicitor General (OSG) must be granted. A petition for correction of an entry involving substantial changes is adversarial in nature. The Rules of Court thus provide that the civil registrar and all persons who have a claim or any interest which would be affected by the correction of the entry shall be made parties to the proceeding. The fact that the notice of hearing was published in a newspaper of general circulation and notice thereof was served upon the State will not change the nature of the proceedings taken. Here, the petition filed by A to change the name of his father from X to Y is substantial in nature since it will change her paternity and family relationships. Hence, there is a need to implead X, Y, her mother Z, and her siblings since they are indispensable parties who will be affected by the prayed correction. (Republic v. Timario, G.R. No. 234251, 30 June 2020)\n\n(For the Examiner: The panel respectfully recommends that additional points be given to answers that note that the publication of the petition shall only cure the failure to implead, under special circumstances, where the petitioner exerted earnest efforts to bring to court all possible interested parties.)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q4",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "correction of entry indispensable parties",
+      "cases": [
+        {
+          "title": "Republic v. Timario, G.R. No. 234251 (2020)",
+          "url": "https://lawphil.net/judjuris/juri2020/jun2020/gr_234251_2020.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A filed a complaint for breach of contract against XYZ Entertainment Company. A’s verification contained a single statement that she attests to the truth and correctness of the allegations in the complaint based on her personal knowledge or on authentic documents. XYZ Entertainment Company prayed that the complaint be dismissed due to its “defective verification”. Decide with reason(s).",
+      "key": "The Court should not dismiss the complaint.\n\nIt has been the consistent ruling of the Supreme Court that a liberal treatment is accorded to defective verification. Non-compliance with the rule on verification or a defect therein does not necessarily render the pleading fatally defective. The court may order its submission or correction or act on the pleading if the attending circumstances are such that strict compliance with the rules may be dispensed with so that the ends of justice may be served thereby. It has been held that verification is deemed substantially complied with when one who has ample knowledge to swear to the truth of the allegations in the complaint or petition signs the verification, and when matters alleged in the petition have been made in good faith or are true and correct. (Torres v. Republic, G.R. No. 247490, 2 March 2022)\n\nHere, although A did not fully comply with Section 4, Rule 7 regarding verification, the Court may not dismiss the case. The Court may order that the correction be made on the complaint.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q5",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "verification defect",
+      "cases": [
+        {
+          "title": "Torres v. Republic, G.R. No. 247490 (2022)",
+          "url": "https://lawphil.net/judjuris/juri2022/mar2022/gr_247490_2022.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A was charged with estafa before the Regional Trial Court (RTC)-Iloilo City. He got arrested at the Ninoy Aquino International Airport in Pasay City by virtue of a warrant of arrest issued by the RTC-Iloilo City. A was brought to the National Bureau of Investigation (NBI) detention center in Manila. She applied for bail with the RTC-City of Manila, which denied her application for lack of jurisdiction. Did the RTC-City of Manila correctly deny the application? Reason(s).",
+      "key": "Yes, RTC-City of Manila correctly denied A’s application for bail. Any person in custody who is not charged in court may apply for bail with any court of the place where he is held. Since A has already been charged with estafa in RTC-Iloilo City, she can no longer apply for bail with RTC-City of Manila. (Section 17, Rule 114; Altobano- Ruiz v. Pichay, A.M. No. MTJ-17-1893, 19 February 2018)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q6",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "bail where filed",
+      "cases": [
+        {
+          "title": "Altobano-Ruiz v. Pichay, A.M. No. MTJ-17-1893 (2018)",
+          "url": "https://lawphil.net/judjuris/juri2018/feb2018/am_mtj-17-1893_2018.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A was arrested for carnapping B’s car. During the investigation, A executed an extrajudicial confession admitting the crime and implicating C and D as his coconspirators. As a result, C and D were also arrested. During the trial, C and D objected to the admission of A’s extrajudicial confession as against them, but the objection was overruled. The trial court eventually rendered a verdict of conviction against A, C, and D, using as its sole basis A’s extrajudicial confession. Is the verdict of conviction correct? Reason(s).",
+      "key": "The verdict of conviction is not correct.\n\nSection 3, Rule 133 of the 2019 Rules on Evidence provides that “an extrajudicial confession made by an accused shall not be sufficient ground for conviction, unless corroborated by evidence of corpus delicti.” Furthermore, Section 29 of the same Rule provides that the “rights of a party cannot be prejudiced by an act, declaration, or omission of another.” This is the res inter alios acta rule.\n\nHere, the Court cannot convict A solely based on his extrajudicial confession. The said confession must be corroborated with corpus delicti, which is absent in the problem. With more reason, the Court cannot convict C and D on the sole basis of the extrajudicial confession of A. The extrajudicial confession of A is inadmissible against C and D due to a violation of the res inter alios acta rule.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q7",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "extrajudicial confession res inter alios acta",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "In a civil case for a sum of money entitled X v. Y, the Regional Trial Court (RTC) ruled in favor of plaintiff X. The decision became final. A writ of execution was consequently issued. Sheriff Z immediately conducted a public auction for the sale of Y’s real properties to satisfy the money judgment in the amount of PHP 765,159.55. Y filed a complaint to nullify the sale of the real properties, arguing that the same did not follow the order of preference of levy for the satisfaction of the money judgment. Decide with reason(s).",
+      "key": "The complaint to nullify the sale of the real properties is meritorious.\n\nUnder the Rules, in the execution of judgments for money, the officer shall demand from the judgment obligor the immediate payment of the full amount stated in the writ of execution and all lawful fees. The judgment obligor shall pay in cash, certified bank check payable to the judgment obligee, or any other form of payment acceptable to the judgment obligee.\n\nConsequently, if the judgment obligor cannot pay all or part of the obligation in cash, certified bank check or other mode of payment acceptable to the judgment obligee, the officer shall levy upon the properties of the judgment obligor of every kind and nature whatsoever which may be disposed, of for value and not otherwise exempt from execution giving the latter the option to immediately choose which property or part thereof may be levied upon, sufficient to satisfy the judgment. If the judgment obligor does not exercise the option, the officer shall first levy on the personal properties, if any, and then on the real properties if the personal properties are insufficient to answer for the judgment. (Section 9, Rule 39, Rules of Court)\n\nIn Son v. Leyva (A.M. No. P-11-2968, 28 November 2019), the Supreme Court held that the rule commands that the executing officer shall enforce the judgments for money in this order: first, the officer must demand from the judgment obligor to pay in cash the judgment obligation; second, if the judgment obligor fails to pay in cash, the officer shall proceed to levy on the personal properties of the judgment obligor; and third, if there are no personal properties, the officer shall then levy on the real properties of the judgment obligor.\n\nHere, when the decision in a civil case for sum of money in favor of plaintiff X became final, a writ of execution was consequently issued and Sheriff Z immediately conducted a public auction for the sale of Y’s real properties to satisfy the money judgment in the amount of PHP 765,159.55, without first attempting to demand from Y the payment of the judgment obligation nor levy Y’s personal properties.\n\nEvidently, Sheriff Z erred in immediately conducting a public auction for the sale of Y’s real properties to satisfy the money judgment without following the order of preference of levy for the satisfaction of the money judgment under the Rules.\n\nHence, the complaint to nullify the sale of the real properties is proper.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q8",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "execution order of levy",
+      "cases": [
+        {
+          "title": "Son v. Leyva, A.M. No. P-11-2968 (2019)",
+          "url": "https://lawphil.net/judjuris/juri2019/nov2019/am_p-11-2968_2019.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "In a case for sum of money filed by A against PT Production Company (PTPC), the latter was declared in default for filing its answer one day late. In its motion to lift the order of default, PTPC explained that the belated filing of the answer was due to sheer inadvertence, for which it asked the court’s consideration in the interest of substantial justice. The trial court, however, denied the motion, stating that the reglementary period for filing the answer must be strictly followed. PTPC thereafter went to the Court of Appeals on a petition for certiorari, charging the trial judge with grave abuse of discretion amounting to lack or excess of jurisdiction for upholding technicalities over substantial justice. In his comment, A argued that the petition for certiorari should be dismissed for being an improper remedy. According to him, the correct remedy is appeal after the trial court shall have already rendered a judgment on the merits. Decide with reason(s).",
+      "key": "I will rule in favor of PTPC.\n\nA petition for certiorari is a proper remedy to question the denial of the motion to lift the order of default if PTPC can show that there was grave abuse of discretion on the part of the trial judge in denying its motion. Still, PTPC should first file a motion for reconsideration of the Order denying the motion to lift the order of default before resorting to a Rule 65 Petition. The remedy for an interlocutory order is certiorari.\n\nWhile it may be correct that an appeal from the judgment on the merits is available to a defendant who has been declared in default, the propriety of the denial of the motion to lift the order of default would be rendered moot following a judgment on the merits. (NPC v. Baysic, G.R. No. 213893, 25 September 2019, citing Martinez v. Republic, 536 Phil. 868, 876-877, 2006)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q9",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "order of default certiorari",
+      "cases": [
+        {
+          "title": "National Power Corp. v. Baysic, G.R. No. 213893 (2019)",
+          "url": "https://lawphil.net/judjuris/juri2019/sep2019/gr_213893_2019.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Martinez v. Republic, G.R. No. 160895 (2006)",
+          "url": "https://lawphil.net/judjuris/juri2006/oct2006/gr_160895_2006.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A filed with the Metropolitan Trial Court (MeTC)-Makati City a collection suit against B for unpaid rentals of his condominium unit in Bonifacio Global City in the amount of PHP 1 million. After service of summons and hearing pursuant to the Rules on Expedited Procedures, the MeTC rendered judgment in favor of A. B filed an ordinary appeal with the Regional Trial Court (RTC). Is the appeal proper? Reason(s).",
+      "key": "No, the appeal is improper. Pursuant to the Rules on Expedited Procedures in the First Level Courts (A.M. No. 08-8-7-SC), the collection suit of A against B, which is purely civil in nature and solely for the payment of a sum of money not exceeding Php1 million, exclusive of interests and costs, arising from a contract of lease, is considered a small claim. Under the same Rules, the decision in small claims cases shall be final, executory, and unappealable.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q10",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "small claims appeal",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "A filed against her estranged husband X a petition for custody of B before the Regional Trial Court (RTC)-Quezon City where X lived together with B. When X learned of the petition, he, together with B, moved to another residence in Iloilo City. When A found out what X did, she again filed a petition for custody of B before RTC-Iloilo City. When X learned of this second case, he once again changed residence, this time, in Zamboanga City. A then resorted to a petition for habeas corpus against X to produce the live person of B before the Court of Appeals. A alleged that X was illegally restraining B, and withholding from her custody over their child. Was A’s resort to habeas corpus before the Court of Appeals justified? Reason(s).",
+      "key": "Yes, A was correct. Family courts have concurrent jurisdiction with the Court of Appeals and the Supreme Court in petitions for habeas corpus where the custody of minors is at issue. The petition may be filed with the Court of Appeals or with any of its members, and if so granted, the writ shall be enforceable anywhere in the Philippines. A was thus correct to file a habeas corpus petition to secure custody over her child B with the Court of Appeals, which had concurrent jurisdiction with the family courts over such a petition. (Section 20, A.M. No. 03-04-04-SC; Thornton v. Thornton, G.R. No. 154598, 16 August 2004)\n\nALTERNATIVE ANSWER:\n\nNo, A’s resort to habeas corpus before the Court of Appeals is not justified. In the case of Reyes v. Elquiero (G.R. No. 210487, 2 September 2020), in consideration likewise were a petition for custody that was filed with the trial court and a petition for habeas corpus that was filed with the Court of Appeals. The Supreme Court first declared therein that forum shopping is prohibited. It added that there is forum shopping when the same subject matter, parties, and relief are involved, albeit packaged in different forms. Here, the three petitions involve the same subject matter and parties. There is likewise the same relief prayed for in all said petitions, that is, for A to secure custody of B. Considering that there is forum shopping, resorting to habeas corpus is therefore unjustified.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q11",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "habeas corpus custody of minors",
+      "cases": [
+        {
+          "title": "Thornton v. Thornton, G.R. No. 154598 (2004)",
+          "url": "https://lawphil.net/judjuris/juri2004/aug2004/gr_154598_2004.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Reyes v. Elquiero, G.R. No. 210487 (2020)",
+          "url": "https://lawphil.net/judjuris/juri2020/sep2020/gr_210487_2020.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A filed with the Municipal Trial Court in Cities (MTCC)-Davao City, a complaint for recovery of ownership of real property against B. After A presented his evidence, B filed a motion to dismiss on the ground of lack of jurisdiction since the assessed value of the property in the amount of PHP 10 million was beyond the jurisdictional threshold of the MTCC. A argued that the motion to dismiss should be denied since B was deemed to have waived such jurisdictional defect when he failed to plead the same as an affirmative defense in his answer. Is A correct? Reason(s).",
+      "key": "No, A is incorrect. As a general rule, defenses and objections not pleaded either in a motion to dismiss or in the answer are deemed waived. When it appears from the pleadings or the evidence on record, however, that the court has, among others, no jurisdiction over the subject matter, the court must dismiss the claim. Objections to jurisdiction cannot be waived and may be brought at any stage of the proceedings, even on appeal. (Section 1, Rule 9, Rules of Court)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q12",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "lack of jurisdiction not waived",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "A was charged with murder for the death of his neighbor, B. Upon a finding of probable cause, the presiding judge of Branch 31, Regional Trial Court-Makati City, issued a warrant of arrest on A. Police Corporal X (PCPl X) and Warrant Officer Police Staff Sergeant (PSSg) Y implemented the warrant of arrest on A without using body-worn cameras and one alternative recording device. A argued that the implementation of the warrant of arrest was unlawful since the Rules on the Use of Body-Worn Cameras in the Execution of Warrants was not observed. Is A correct? Reason(s).",
+      "key": "A is not correct.\n\nThe non-compliance with the Rules on the Use of Body-Worn Cameras in the implementation of a warrant of arrest will not make the arrest unlawful. Section 5, Rule II of the Rules on the Use of Body-Worn Cameras provides that “failure to observe the requirement of using body-worn cameras or alternative recording devices shall not render the arrest unlawful or render the evidence obtained inadmissible xxx.”\n\nThus, while the police officers who implemented the warrant of arrest did not use body-worn cameras or an alternative recording device, the non-compliance will not make the arrest invalid.\n\nALTERNATIVE ANSWER:\n\nA is correct.\n\nEnforcement of a warrant of arrest without a body-worn camera violates Rule 2, Sections 1 and 3 of AM 21-06-08-SC (Rule on the Use of Body Worn Cameras in the Execution of Warrants).\n\nHowever, the arrest remains valid pursuant to Rule 2 Section 5 because failure to observe the requirement of using body-worn cameras or alternative recording devices shall not render the arrest unlawful or render the evidence obtained inadmissible.\n\nFacts surrounding the arrest may be proved by the testimonies of the arresting officers, the person arrested, and other witnesses to the arrest.\n\nHowever, a law enforcement officer who fails, without reasonable grounds, to use body-worn cameras or alternative recording devices, or intentionally interferes with the body-worn cameras’ ability to accurately capture audio and video recordings of the arrest, or otherwise manipulates such recording during or after the arrest, may be liable for contempt of court.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q13",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "body-worn cameras",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "Armed with a search warrant, police officers searched the house of A for firearms and ammunition in his presence and in the presence of two barangay officials. One of the police officers found a black basin containing some clothes in A’s bedroom. When the clothes were removed from the basin, a .38 caliber revolver and six pieces of live ammunition were discovered. Based on this, A was charged with illegal possession of firearms and ammunition. Before the arraignment, he assailed the validity of the search warrant for alleged lack of any records indicating that the judge conducted searching questions and answers for the purpose of determining probable cause. The prosecution nonetheless invoked the presumption of regularity in the performance of official duty. Decide with reason(s).",
+      "key": "The search warrant was invalid. Under Section 2, Article III of the Constitution and Section 5, Rule 126 of the Rules of Court, a search warrant may be issued only upon probable cause personally determined by the judge after conducting an examination under oath of the complainant and the witnesses he may produce. Such examination must consist of searching questions and answers, and the sworn statements or affidavits must form part of the record. In the present case, the records are bereft of any showing that the issuing judge personally and thoroughly examined the applicant and his witnesses.\n\nFurthermore, the constitutional protection against unreasonable searches and seizures depends on a valid finding of probable cause, which must be supported by sufficient facts. The Court has ruled that if there is no record showing how the judge determined probable cause, such a determination is contrary to the proper performance of duty and disproves any claim that the judge made a thorough and careful examination of the witnesses. (Abiang v. People, G.R. No. 265117, 13 November 2023, citing Ogayon v. People, 768 Phil. 272, J. Lazaro-Javier)\n\nMoreover, the presumption of regularity in official acts is rebuttable by any record or evidence of irregularity and cannot override the accused’s presumption of innocence or right to challenge probable cause.\n\nHere, A assailed the validity of the search warrant before arraignment, for alleged lack of any records indicating that the judge conducted searching questions and answers for the purpose of determining probable cause. Hence, the search warrant is invalid.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q14",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "search warrant searching questions",
+      "cases": [
+        {
+          "title": "Abiang v. People, G.R. No. 265117 (2023)",
+          "url": "https://lawphil.net/judjuris/juri2023/nov2023/gr_265117_2023.html",
+          "src": "lawphil"
+        },
+        {
+          "title": "Ogayon v. People, G.R. No. 188794 (2015)",
+          "url": "https://lawphil.net/judjuris/juri2015/sep2015/gr_188794_2015.html",
+          "src": "lawphil"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "A charged Atty. X with violation of the 2004 Rules on Notarial Practice for notarizing a Unilateral Deed of Absolute Sale and an Affidavit of Confirmation of Sale where the vendee was Atty. X’s paternal uncle, Y. Atty. X countered that since his uncle was not a signatory to the said documents, he was not disqualified from performing a notarial act under Rule IV, Section 3 of the 2004 Rules on Notarial Practice. Is the contention of Atty. X correct? Reason(s).",
+      "key": "Atty. X is incorrect. Under the 2004 Rules on Notarial Practice, a notary public is disqualified from performing a notarial act if he or she ·is a spouse, common-law partner, ancestor, descendant, or relative by affinity or consanguinity of the principal within the fourth civil degree. Here, Y, the paternal uncle of Atty. X, is the vendee in the Unilateral Deed of Absolute Sale and an Affidavit of Confirmation of Sale. Despite Y’s lack of signature in these documents, he remains a “principal” party to the deed of absolute sale and its confirmatory document. Notarizing a document where one of the contracting parties is a relative within the fourth civil degree is a violation of the 2004 Rules on Notarial Practice. Thus, the prohibition in the rules of notarial practice still applied to Atty. X. (Spouses Tan v. Vallejo, A.C. No. 11219, 16 March 2022)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q15",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "notary disqualification relative",
+      "cases": [
+        {
+          "title": "Spouses Tan v. Vallejo, A.C. No. 11219 (2022)",
+          "url": "https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/4/68180",
+          "src": "external",
+          "label": "SC E-Library"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "Based on the results of the judicial audit of the cases assigned to Judge X, it was discovered that he had 44 pending cases which he failed resolve within the prescribed three-month period. It was confirmed that he did not request from the Supreme Court any additional time to act on these cases. The oldest of these cases had been pending with his court for 13 years already. In his defense, he claimed that he was sickly and was in and out of the hospital. It was for this reason that he was unable to promptly resolve his cases. Is Judge X guilty of gross inefficiency? Reason(s).",
+      "key": "Yes, Judge X is guilty of gross inefficiency. Rules prescribing the time within which certain acts must be done are indispensable to prevent needless delays in the orderly and speedy disposition of cases. Thus, the 90-day period is mandatory. The speedy disposition of cases in our courts is a primary aim of the judiciary, so that the ends of justice may not be compromised and the judiciary will be true to its commitment to provide litigants their constitutional right to speedy trial and speedy disposition of their cases.\n\nThe honor and integrity of the judicial system are measured not only by the fairness and correctness of decisions rendered, but also by the efficiency with which disputes are resolved.\n\nThus, judges must perform their official duties with utmost diligence if public confidence in the judiciary is to be preserved. There is no excuse for mediocrity in the performance of judicial functions. The position of judge exacts nothing less than faithful observance of the law and the Constitution in the discharge of official duties. (Office of the Court Administrator v. Judge Victor Teves, Sr., A.M. No. RTJ-21-2606, 09 February 2021, Second Division, Lazaro-Javier, J.)",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q16",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "gross inefficiency judge",
+      "cases": [
+        {
+          "title": "Office of the Court Administrator v. Teves, Sr., A.M. No. RTJ-21-2606 (2021)",
+          "url": "https://batasnatin.com/laws/am-rtj-21-2606",
+          "src": "external",
+          "label": "Batas Natin"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "Under Resolution dated November 12, 2023, the Supreme Court found Atty. X liable for breach of the sub judice rule and imposed on him the penalty of suspension from the practice of law for six months, effective immediately. On May 20, 2024, Atty. X submitted to the Supreme Court a sworn statement declaring, among others, that he desisted from the practice of law during his six-month suspension beginning November 12, 2023 when he received the Resolution until May 12, 2024. May Atty. X resume his practice of law? Reason(s).",
+      "key": "Yes, Atty. X may resume his practice of law. Pursuant to Canon VI, Section 45 of the Code of Professional Responsibility and Accountability, upon expiration of suspension from the practice of law, the lawyer shall file a Sworn Statement with the Supreme Court through the Office of the Bar Confidant. Such a statement shall indicate the date of the lawyer’s receipt of the order imposing such suspension. Canon VI, Section 46 provides that the Sworn Statement is considered proof of the suspended lawyer’s compliance with the suspension order, and that the lawyer is allowed to resume practice of law upon filing the Sworn Statement. The Court’s confirmation is not required for the resumption of practice, as clarified in A.C. No. 11032 (10 January 2023) against Atty. Severo Brillantes, further affirmed in A.C. No. 12443 (23 August 2023) against Atty. Winston Hipe. Thus, Atty. X may resume his practice of law upon filing his sworn statement, without waiting for the Court’s confirmation.\n\nIn AC No. 11032, however, the Supreme Court warned that “(W)hile the lifting of administrative suspensions has now been made faster and more efficient, this does not mean that the Court will be similarly liberal to those who would submit false certifications or otherwise exploit the process.”",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q17",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "lifting suspension sworn statement",
+      "cases": [
+        {
+          "title": "Re: Atty. Severo L. Brillantes, A.C. No. 11032 (2023)",
+          "url": "https://batasnatin.com/laws/ac-no-11032",
+          "src": "external",
+          "label": "Batas Natin"
+        },
+        {
+          "title": "Valdez v. Hipe, A.C. No. 12443 (2023)",
+          "url": "https://batasnatin.com/laws/ac-no-12443",
+          "src": "external",
+          "label": "Batas Natin"
+        }
+      ]
+    },
+    {
+      "pts": 5,
+      "q": "You were hired by A, owner of Lot No. 12345 located in Quezon City, to draft a demand letter addressed to X, an informal settler who built shanties on the said property. You were instructed to specifically demand that X vacate the property and remove the improvements thereon, otherwise, A will file an ejectment suit against X. Draft the demand letter.",
+      "key": "SUBJECT: DEMAND TO VACATE AND REMOVE IMPROVEMENTS\n\nTo: X\n\nIt has come to our attention that you are presently occupying a parcel of land (Lot No. 12345) in Quezon City and have constructed improvements thereon.\n\nBe informed that our client, A, is the registered owner of said parcel of land, covered by TCT No. 678. Your possession and occupation of the property is unlawful and without my client’s permission.\n\nDEMAND is thus made upon you to VACATE the property and REMOVE ALL IMPROVEMENTS that you have built on the premises within a period of ten (10) days from receipt of this letter; otherwise, a case for ejectment will be filed against you for the protection of my client’s interest.\n\nWe trust that you give this matter your preferential attention to obviate the extreme embarrassment and expenses that inevitably go with court litigations.\n\n(Date)\n\nPlease be guided accordingly, Attorney ABCDE",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q18",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "demand letter ejectment",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "A sued B for specific performance and damages. After the issues have been joined, the Regional Trial Court-City of Manila set the pre-trial conference of the case on November 16, 2025. Draft a special power of attorney, authorizing Atty. X to represent A as his attorney-in-fact during the pre-trial conference. Omit both caption and acknowledgment.",
+      "key": "I, [Name of Principal], of legal age, [civil status], [citizenship], and residing at [address], do hereby name, constitute, and appoint ATTY. X, of legal age, Filipino, and with office address at [law office address], to be my true and lawful attorney-in-fact, for me and in my name, place, and stead, to do and perform the following acts and deeds, to wit: 1. To appear for and represent me as my attorney-in-fact in the pre-trial conference and all related proceedings in Civil Case No. [case number], entitled “[Case Title],” pending before the [name of court and branch]; 2. To enter into stipulations of facts, admissions of documentary and object evidence, and all other matters which may aid in the prompt disposition of the case; 3. To enter into an amicable settlement or submit to alternative modes of dispute resolution, as may be proper and in my best interest; 4. To sign, execute, and deliver any and all documents, agreements, and papers necessary to carry out the foregoing authority; 5. To do all other acts necessary and incidental to the foregoing, as fully and effectively as I could do if personally present.\n\nHEREBY GIVING AND GRANTING unto my said attorney-in-fact full power and authority to do and perform all and every act and thing whatsoever requisite and necessary to be done in and about the premises, as fully to all intents and purposes as I might or could lawfully do if personally present, and hereby ratifying and confirming all that my said attorney-in-fact shall lawfully do or cause to be done under and by virtue of these presents.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q19",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "special power of attorney pre-trial",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    },
+    {
+      "pts": 5,
+      "q": "On April 11, 2023, the Court En Banc approved the Guidelines on Submission of Electronic Copies of Pleadings and Other Court Submissions (Guidelines), which governs the electronic transmittal in PDF of pleadings and other court submissions 6 and their accompanying documents for filing in all cases covered by the Rules of Civil Procedure, as amended. What Guiding Principle(s) and expected Outcome(s) of the Strategic Plan for Judicial Innovations 2022-2027 (SPJI) propelled the adoption of this innovation? Briefly explain your answer.",
+      "key": "In promulgating the Guidelines, the Supreme Court aims to address the institutional challenges in the delivery of justice. The essence of “technological adaptability,” which is one of the four pillars of SPJI, ensures the accessibility of the courts to all. By leveraging digitalization, court processes and operations will be streamlined and improved. The key objectives and outcomes of such innovation include: i) elimination of voluminous paper dockets; ii) expedited retrieval of court records; iii) implementation of online hearings that reduce transportation and security costs; and iv) course official notifications through electronic service of summons and notices. In turn, the judiciary’s duty to serve the public through increased efficiency and continuing innovation would be better realized.\n\nALTERNATIVE ANSWER:\n\nThe Guidelines are aligned with the SPJI’s Guiding Principles of (any one of these principles may be sufficient)\n\n● TIMELY AND FAIR JUSTICE - The Guidelines will allow the courts to perform their judicial functions more efficiently and in a more timely manner. ● TRANSPARENT AND ACCOUNTABLE JUSTICE - An electronic filing system contemplated by the Guidelines will also allow litigants and other stakeholders to obtain data on the status of cases. ● TECHNOLOGY ADAPTIVE MANAGEMENT - The Guidelines will require making judicial functions available through a technology platform.\n\nOutcomes: While the Guidelines state that it is aligned with the SPJI outcome of INNOVATION (since it will require the building and use of an e-filing platform,\n\nwhich is part of the “Information and Communications Technology infrastructure” contemplated by this Outcome of the SPJI), alternative answers may include:\n\n● EFFICIENCY - Electronic filing can lead to more efficient court systems, as well as effective monitoring and evaluation of the courts ● ACCESS - As mentioned above, an electronic filing system can facilitate greater transparency for litigants and other stakeholders.",
+      "origin": "2025 Bar · Remedial Law, Legal and Judicial Ethics · Q20",
+      "keyLabel": "UP BRI suggested answer",
+      "kw": "Strategic Plan for Judicial Innovations",
+      "cases": [],
+      "noCases": "The suggested answer cites no case; it rests on constitutional, statutory or procedural provisions."
+    }
   ],
 };
 
 // Registry cases matched by reading each case's Verbatim Doctrine; only matches judged at 75% confidence or higher.
 const REGISTRY = { ds: "collection://d6fddc7b-46dc-4a9c-b3a4-4e326b9e0de1", url: "https://app.notion.com/p/caae92a0bbcf4825bfecdb2ae178da97" };
 const CASES = {
-  "pol-2": [{ title: "Kilusan ng Mamamayan Para sa Matuwid na Bayan v. Commission on Elections", url: "https://app.notion.com/p/3defb2326e1f81e08a30eeba8c57f7d2" }],
   "lab-1": [{ title: "Manggagawa sa Komunikasyon ng Pilipinas v. PLDT, Inc., et al.", url: "https://app.notion.com/p/3dffb2326e1f8140a1a5f784fbc74df6" }],
 };
 // Search terms for the loose live registry search.
 const KW = {
-  pol: ["checkpoint search probable cause", "party-list marginalized sectoral", "taxpayer suit standing", "diplomatic immunity"],
   lab: ["reinstatement pending appeal", "labor-only contracting", "floating status"],
   crim: ["unlawful aggression self-defense", "robbery with homicide conspiracy", "notice of dishonor B.P. 22"],
-  rem: ["certiorari motion for reconsideration", "summons corporation", "dying declaration", "conflict of interest former client", "small claims jurisdiction"],
 };
 for (const id in BANK) BANK[id].forEach((q, i) => {
   q.cases = q.cases || CASES[`${id}-${i}`] || []; q.kw = q.kw || KW[id]?.[i];
@@ -837,7 +1437,7 @@ function renderBoard() {
       </article>`;
     }).join("")}
   </div>
-  <p class="small muted" style="margin-top:22px">Civil Law and Commercial and Taxation Laws use the 2025 Bar questions with the UP Bar Review Institute's suggested answers. The other subjects hold original practice problems with no sourced answer key, so they are not graded until one is added. Answers save in this browser as you write. Verify every cited rule against the current text before relying on it.</p>`;
+  <p class="small muted" style="margin-top:22px">Political, Commercial and Taxation, Civil, and Remedial Law use the 2025 Bar questions with the UP Bar Review Institute's suggested answers. Labor and Criminal Law hold original practice problems with no sourced answer key, so they are not graded until one is added. Answers save in this browser as you write. Verify every cited rule against the current text before relying on it.</p>`;
 
   $("#mode").onchange = e => { S.mode = e.target.value; save(); render(); };
   $("#dur").onchange = e => { S.duration = +e.target.value; save(); };
