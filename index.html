@@ -91,6 +91,22 @@ summary { cursor: pointer; font-weight: 600 }
 .grade { border-left: 3px solid var(--gold); padding: 4px 0 4px 14px; display: flex; flex-direction: column; gap: 6px; white-space: pre-wrap }
 .grade ul { margin: 0; padding-left: 20px }
 .score-in { width: 80px }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px }
+.stats div { display: flex; flex-direction: column }
+.stats strong { font-family: var(--f-mono); font-size: 1.1rem; font-variant-numeric: tabular-nums }
+.stats .ok { color: var(--good) } .stats .low { color: var(--bad) }
+.chart { width: 100%; height: auto; max-width: 100% }
+.chart .grid { stroke: var(--line); stroke-width: 1 }
+.chart .passline { stroke: var(--gold); stroke-width: 1.5; stroke-dasharray: 4 3 }
+.chart .series { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round }
+.chart .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2 }
+.chart .dot.below { fill: var(--surface); stroke: var(--accent) }
+.chart .hit { fill: transparent }
+.chart .tick { fill: var(--muted); font: 10px var(--f-body) }
+.tablewrap { overflow-x: auto }
+table.sessions { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums }
+table.sessions th, table.sessions td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap }
+table.sessions th { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
 .feedback { display: flex; flex-direction: column; gap: 12px; border-color: var(--gold) }
 .reg { display: flex; flex-direction: column; gap: 6px }
 .reg ul { margin: 0; padding-left: 20px }
@@ -1353,9 +1369,12 @@ const NOTION = { server: "Notion", ds: "collection://84dcac12-f4a4-4254-a161-db7
   subjects: { pol: ["Political & Public International Law"], comtax: ["Mercantile / Commercial Law", "Taxation Law"], civ: ["Civil Law"],
     lab: ["Labor Law"], crim: ["Criminal Law"], rem: ["Remedial Law", "Legal Ethics"] } };
 const COUNTS = [3, 5, 8, 10];
+// "Track" values in the PH Bar Question Repository.
+const TRACKS = { all: "All tracks", "T1-ACTUAL": "T1 · Actual Bar questions", "T2-LANDMARK": "T2 · Landmark cases",
+  "T3-BARCHAIR": "T3 · Bar Chair-linked", "T4-TWISTED": "T4 · Twisted facts", "T5-SYLLABUS": "T5 · Syllabus hypotheticals" };
 
 let S = { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null,
-  mode: "bar", logNotion: true, source: "builtin", count: 5, includeReview: false, ...(load() || {}) };
+  mode: "bar", logNotion: true, source: "builtin", track: "all", history: [], count: 5, includeReview: false, ...(load() || {}) };
 let mcp, mcpReady = window.claude?.use ? window.claude.use("mcp").catch(() => null).then(m => (mcp = m)) : Promise.resolve(null);
 let loading = null, sourceNote = "";
 let tick = null, grader = null, confirmSubmit = false;
@@ -1379,6 +1398,7 @@ function render() {
   clearInterval(tick);
   if (S.view === "exam" && S.exam) return renderExam();
   if (S.view === "report" && S.report) return renderReport();
+  if (S.view === "progress") return renderProgress();
   renderBoard();
 }
 
@@ -1392,7 +1412,7 @@ function renderBoard() {
       <h1>Philippine Bar Simulator</h1>
       <p class="muted">Six subjects, weighted as in recent Bar Bulletins. Passing general average: ${PASS}%.</p>
     </div>
-    <p class="seal">Lex dura sed lex</p>
+    <div class="row"><button id="progress">My progress</button><p class="seal">Lex dura sed lex</p></div>
   </header>
 
   <section class="panel card-score">
@@ -1414,7 +1434,9 @@ function renderBoard() {
     <label for="src">Question source
       <select id="src"><option value="notion" ${S.source === "notion" ? "selected" : ""}>My Notion repository</option><option value="builtin" ${S.source === "builtin" ? "selected" : ""}>Built-in practice set</option></select>
     </label>
-    ${S.source === "notion" ? `<label for="cnt">Questions per subject
+    ${S.source === "notion" ? `<label for="track">Track
+      <select id="track">${Object.entries(TRACKS).map(([v, l]) => `<option value="${v}" ${S.track === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label for="cnt">Questions per subject
       <select id="cnt">${COUNTS.map(n => `<option ${n == S.count ? "selected" : ""}>${n}</option>`).join("")}</select></label>
     <label class="check" for="rev"><input type="checkbox" id="rev" ${S.includeReview ? "checked" : ""}> Include “Needs Review” rows</label>` : ""}
     <label class="check" for="lognotion"><input type="checkbox" id="lognotion" ${S.logNotion ? "checked" : ""}> Log graded answers to my Performance &amp; Error Log</label>
@@ -1440,9 +1462,11 @@ function renderBoard() {
   </div>
   <p class="small muted" style="margin-top:22px">Political, Commercial and Taxation, Civil, and Remedial Law use the 2025 Bar questions with the UP Bar Review Institute's suggested answers. Labor and Criminal Law hold original practice problems with no sourced answer key, so they are not graded until one is added. Answers save in this browser as you write. Verify every cited rule against the current text before relying on it.</p>`;
 
+  $("#progress").onclick = () => { S.view = "progress"; save(); render(); };
   $("#mode").onchange = e => { S.mode = e.target.value; save(); render(); };
   $("#dur").onchange = e => { S.duration = +e.target.value; save(); };
   $("#src").onchange = e => { S.source = e.target.value; sourceNote = ""; save(); render(); };
+  if ($("#track")) $("#track").onchange = e => { S.track = e.target.value; save(); render(); };
   if ($("#cnt")) $("#cnt").onchange = e => { S.count = +e.target.value; save(); render(); };
   if ($("#rev")) $("#rev").onchange = e => { S.includeReview = e.target.checked; save(); render(); };
   $("#lognotion").onchange = e => { S.logNotion = e.target.checked; save(); };
@@ -1530,7 +1554,7 @@ function renderExam() {
   <section style="display:flex;flex-direction:column;gap:14px">
     <div class="row" style="justify-content:space-between"><span class="label">Question ${E.idx + 1} of ${qs.length} · ${q.pts} points</span>
       <button id="flag">${E.flags[E.idx] ? "Unflag" : "Flag for review"}</button></div>
-    ${q.src ? `<p class="small muted">From your repository: <a href="${esc(q.src.url)}" target="_blank" rel="noopener">${esc(q.src.title)}</a>${q.src.status !== "Verified" ? ` · <span class="pill warn">${esc(q.src.status || "Unverified")}</span>` : ""}</p>` : ""}
+    ${q.src ? `<p class="small muted">From your repository: <a href="${esc(q.src.url)}" target="_blank" rel="noopener">${esc(q.src.title)}</a>${q.src.track ? ` · <span class="pill idle">${esc(TRACKS[q.src.track] || q.src.track)}</span>` : ""}${q.src.status !== "Verified" ? ` · <span class="pill warn">${esc(q.src.status || "Unverified")}</span>` : ""}</p>` : ""}
     ${q.origin ? `<p class="small muted">${esc(q.origin)}</p>` : ""}
     <p class="qtext">${esc(q.q)}</p>
     ${E.strict && E.tabSwitches ? `<p class="warnbox">You left the exam window ${E.tabSwitches} time${E.tabSwitches > 1 ? "s" : ""}. In the actual Bar, the exam software logs this.</p>` : ""}
@@ -1656,6 +1680,7 @@ function renderReport() {
       <p class="small muted">${unkeyed ? "This subject has no answer key yet, so your answers are saved here but not scored." : total == null ? "Grade each answer with Claude or score it yourself against the examiner's note." + (review ? "" : " The subject grade posts to your scorecard once every answer has a score.")
         : review ? "Review sittings don't count toward your scorecard. Take a Bar simulation sitting for that." : `Posted to your scorecard at ${s.weight}% weight.`}</p>
       <div class="row" id="bulk"></div>
+      ${sessionLine(R, qs, total)}
     </div>
   </section>
 
@@ -1686,6 +1711,9 @@ function renderReport() {
   });
   wireRegistry(qs);
   wireClaude();
+  if ($("#savesession")) $("#savesession").onclick = () => logSession(R);
+  if ($("#toprogress")) $("#toprogress").onclick = e => { e.preventDefault(); S.view = "progress"; save(); render(); };
+  if (total != null && !R.session) logSession(R);
 }
 
 async function searchRegistry(q, btn, out) {
@@ -1749,10 +1777,11 @@ async function notionQuestions(id) {
       if (!p || picked.length >= S.count) continue;
       const { props, question, answer } = parseNotionPage(p);
       if (!want.includes(props.Subject) || !okStatus.includes(props.Status) || question.length < 40 || !answer) continue;
+      if (S.track !== "all" && props.Track !== S.track) continue;
       picked.push({ q: question, key: answer, kw: props.Question || p.title, src: { title: props.Question || p.title || "Notion question", url: props.url || p.url, status: props.Status, track: props.Track } });
     }
   }
-  if (!picked.length) throw { code: "empty", message: `No ${okStatus.join(" or ")} ${want.join(" / ")} questions were found in your Notion repository. Using the built-in set.` };
+  if (!picked.length) throw { code: "empty", message: `No ${okStatus.join(" or ")} ${want.join(" / ")} questions${S.track !== "all" ? ` on ${TRACKS[S.track]}` : ""} were found in your Notion repository. Using the built-in set.` };
   const fill = BANK[id].slice(0, Math.max(0, S.count - picked.length));
   if (fill.length) sourceNote = `Found ${picked.length} usable Notion question${picked.length > 1 ? "s" : ""} for this subject; ${fill.length} built-in question${fill.length > 1 ? "s" : ""} fill the rest.`;
   const all = [...picked, ...fill.map(q => ({ q: q.q, key: q.key, cases: q.cases, kw: q.kw }))];
@@ -1807,6 +1836,120 @@ function notionBadge(g) {
   if (g.notion) return `<span class="small muted">Logged to your <a href="${esc(g.notion.startsWith("http") ? g.notion : PERF.url)}" target="_blank" rel="noopener">Performance &amp; Error Log</a></span>`;
   if (g.notionError) return `<span class="small" style="color:var(--warn)">Not logged: ${esc(g.notionError)}</span>`;
   return "";
+}
+
+/* ---------- Sessions: saved in this page's store and in the Notion "Bar Simulator — Session Log" ---------- */
+const SESSIONS = { ds: "c60c7938-401a-467a-8e1d-3daba477351c", url: "https://app.notion.com/p/22f50bc7f474435eac2bd08f96f72c43" };
+const caps = {};
+const capReady = name => (caps[name] ??= (window.claude?.use ? window.claude.use(name).catch(() => null) : Promise.resolve(null)));
+async function sessionsRef() {
+  const [db, user] = await Promise.all([capReady("db"), capReady("user")]);
+  const uid = user ? await user.id().catch(() => null) : null;
+  return db && uid ? db.collection("data/users/" + uid + "/sessions") : null;
+}
+
+function sessionSummary(R) {
+  const qs = R.qs || BANK[R.subject];
+  const idx = qs.map((q, i) => i).filter(i => qs[i].key && R.grades[i]);
+  const score = idx.reduce((a, i) => a + R.grades[i].score, 0), max = idx.reduce((a, i) => a + qs[i].pts, 0);
+  return { idx, score, max, pct: max ? score / max : 0, inSet: qs.filter(q => q.key).length };
+}
+
+function sessionLine(R, qs, total) {
+  const ss = R.session;
+  if (ss?.status === "saving") return `<p class="small muted">Saving this session…</p>`;
+  if (ss?.status === "saved") return `<p class="small muted">Session saved to <a href="#" id="toprogress">My progress</a>${ss.notion ? ` and your <a href="${esc(ss.notion)}" target="_blank" rel="noopener">Session Log</a>` : ""}.${ss.notionError ? ` Not in Notion: ${esc(ss.notionError)}` : ""}</p>`;
+  const sm = sessionSummary(R);
+  if (!sm.idx.length || total != null) return "";
+  return `<div class="row small"><button id="savesession">Save session now</button><span class="muted">${sm.idx.length} of ${sm.inSet} answers graded. Grade the rest first to record the full sitting.</span></div>`;
+}
+
+async function logSession(R) {
+  if (R.session) return;
+  const sm = sessionSummary(R);
+  if (!sm.idx.length) return;
+  R.session = { status: "saving" }; save(); if (S.report === R) render();
+  const when = new Date();
+  const rec = { subject: R.subject, mode: R.mode || "bar", date: when.toISOString(), graded: sm.idx.length, inSet: sm.inSet,
+    score: sm.score, max: sm.max, pct: Math.round(sm.pct * 1000) / 1000, minutes: Math.round((R.usedMs || 0) / 60000) };
+  try { const ref = await sessionsRef(); if (ref) await ref.add(rec); else S.history.push(rec); }
+  catch { S.history.push(rec); }
+  if (S.logNotion) {
+    try {
+      await mcpReady;
+      if (!mcp) throw { code: "no_mcp" };
+      const qs = R.qs || BANK[R.subject];
+      for (let t = 0; t < 40 && sm.idx.some(i => R.grades[i].notion === "pending"); t++) await new Promise(r => setTimeout(r, 500));
+      const answers = sm.idx.map(i => R.grades[i].notion).filter(u => typeof u === "string" && u.startsWith("http")).map(u => u.replace(/\?.*$/, ""));
+      const props = {
+        Session: `${subj(R.subject).name} · ${rec.mode === "review" ? "Review" : "Bar simulation"} · ${ymd(when)}`,
+        "date:Date:start": ymd(when), "date:Date:is_datetime": 0,
+        Subject: PERF.subject[R.subject], Mode: rec.mode === "review" ? "Review" : "Bar simulation",
+        "Questions Graded": rec.graded, "Questions in Set": rec.inSet, Score: rec.score, "Max Score": rec.max, "Score %": rec.pct,
+        Result: rec.pct >= PASS / 100 ? "Passing (75% or more)" : "Below 75%", Minutes: rec.minutes,
+        Notes: `Logged by the Bar Simulator. ${qs.filter(q => q.key).length - rec.graded ? `${qs.filter(q => q.key).length - rec.graded} answers were not graded.` : "All answers graded."}`,
+      };
+      if (answers.length) props.Answers = answers;
+      const r = await mcp.callTool(NOTION.server, "notion-create-pages", { parent: { type: "data_source_id", data_source_id: SESSIONS.ds }, pages: [{ properties: props }] });
+      R.session = { status: "saved", notion: r?.payload?.pages?.[0]?.url || SESSIONS.url };
+    } catch (e) {
+      R.session = { status: "saved", notionError: notionError(e).replace(/ Using the built-in set[^.]*\./, "") };
+    }
+  } else R.session = { status: "saved" };
+  save(); if (S.report === R && S.view === "report") render();
+}
+
+async function loadSessions() {
+  try {
+    const ref = await sessionsRef();
+    if (ref) { const snap = await ref.orderBy("date", "asc").limit(500).get(); return { list: snap.docs.map(d => d.data()), where: "store" }; }
+  } catch {}
+  return { list: [...S.history].sort((a, b) => a.date.localeCompare(b.date)), where: "browser" };
+}
+
+function lineChart(points) {
+  const W = 320, H = 120, L = 30, R = 10, T = 10, B = 22, n = points.length;
+  const x = i => L + (n === 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1)), y = v => T + (1 - v) * (H - T - B);
+  const path = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.pct).toFixed(1)}`).join(" ");
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Score per session, ${n} sessions">
+    ${[0, .5, 1].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${L - 6}" y="${y(v) + 3}" class="tick" text-anchor="end">${v * 100}%</text>`).join("")}
+    <line x1="${L}" x2="${W - R}" y1="${y(PASS / 100)}" y2="${y(PASS / 100)}" class="passline"/><text x="${W - R}" y="${y(PASS / 100) - 4}" class="tick" text-anchor="end">75%</text>
+    ${n > 1 ? `<path d="${path}" class="series"/>` : ""}
+    ${points.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.pct)}" r="9" class="hit"><title>${esc(new Date(p.date).toLocaleDateString())} · ${p.mode === "review" ? "Review" : "Bar simulation"} · ${Math.round(p.pct * 100)}% (${p.score}/${p.max})</title></circle><circle cx="${x(i)}" cy="${y(p.pct)}" r="4" class="dot ${p.pct >= PASS / 100 ? "" : "below"}" pointer-events="none"/>`).join("")}
+    <text x="${L}" y="${H - 6}" class="tick">first</text><text x="${W - R}" y="${H - 6}" class="tick" text-anchor="end">latest</text>
+  </svg>`;
+}
+
+async function renderProgress() {
+  app.innerHTML = `<header class="mast"><div><p class="label">Bar Simulator</p><h1>My progress</h1></div><button id="back">Back to subjects</button></header><p class="muted">Loading your sessions…</p>`;
+  $("#back").onclick = () => { S.view = "board"; save(); render(); };
+  const { list, where } = await loadSessions();
+  if (S.view !== "progress") return;
+  const by = id => list.filter(r => r.subject === id);
+  const pct = v => Math.round(v * 100) + "%";
+  app.innerHTML = `
+  <header class="mast">
+    <div><p class="label">Bar Simulator</p><h1>My progress</h1>
+      <p class="muted small">${list.length} session${list.length === 1 ? "" : "s"} recorded${where === "browser" ? " in this browser" : ""}. Each finished sitting also goes to your <a href="${SESSIONS.url}" target="_blank" rel="noopener">Session Log</a>, and each answer to your <a href="${PERF.url}" target="_blank" rel="noopener">Performance &amp; Error Log</a>.</p></div>
+    <button id="back">Back to subjects</button>
+  </header>
+  ${list.length ? "" : `<section class="panel"><p><strong>No sessions yet.</strong> Finish a Review or Bar simulation sitting. When every answer is graded, the session is saved here with its score.</p></section>`}
+  <div class="grid">
+    ${SUBJECTS.map(s => {
+      const rows = by(s.id);
+      if (!rows.length) return `<article class="subj"><div class="top"><span class="label">${s.sched}</span><span class="weight">${s.weight}%</span></div><h3>${esc(s.name)}</h3><p class="small muted">No sessions yet.</p></article>`;
+      const last = rows[rows.length - 1], best = Math.max(...rows.map(r => r.pct)), avg = rows.reduce((a, r) => a + r.pct, 0) / rows.length;
+      return `<article class="subj"><div class="top"><span class="label">${s.sched}</span><span class="weight">${s.weight}%</span></div>
+        <h3>${esc(s.name)}</h3>
+        <div class="stats"><div><span class="label">Latest</span><strong class="${last.pct >= PASS / 100 ? "ok" : "low"}">${pct(last.pct)}</strong></div><div><span class="label">Best</span><strong>${pct(best)}</strong></div><div><span class="label">Average</span><strong>${pct(avg)}</strong></div><div><span class="label">Sessions</span><strong>${rows.length}</strong></div></div>
+        ${lineChart(rows)}
+      </article>`;
+    }).join("")}
+  </div>
+  ${list.length ? `<section style="margin-top:24px"><h2>All sessions</h2><div class="tablewrap"><table class="sessions"><thead><tr><th>Date</th><th>Subject</th><th>Mode</th><th>Graded</th><th>Score</th><th>%</th></tr></thead><tbody>
+    ${[...list].reverse().map(r => `<tr><td>${esc(new Date(r.date).toLocaleString())}</td><td>${esc(subj(r.subject)?.name || r.subject)}</td><td>${r.mode === "review" ? "Review" : "Bar simulation"}</td><td>${r.graded} / ${r.inSet}</td><td>${r.score} / ${r.max}</td><td><span class="pill ${r.pct >= PASS / 100 ? "good" : "bad"}">${pct(r.pct)}</span></td></tr>`).join("")}
+  </tbody></table></div></section>` : ""}`;
+  $("#back").onclick = () => { S.view = "board"; save(); render(); };
 }
 
 /* ---------- Claude grading (sample capability) ---------- */
