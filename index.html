@@ -1355,7 +1355,7 @@ const NOTION = { server: "Notion", ds: "collection://84dcac12-f4a4-4254-a161-db7
 const COUNTS = [3, 5, 8, 10];
 
 let S = { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null,
-  mode: "bar", source: "builtin", count: 5, includeReview: false, ...(load() || {}) };
+  mode: "bar", logNotion: true, source: "builtin", count: 5, includeReview: false, ...(load() || {}) };
 let mcp, mcpReady = window.claude?.use ? window.claude.use("mcp").catch(() => null).then(m => (mcp = m)) : Promise.resolve(null);
 let loading = null, sourceNote = "";
 let tick = null, grader = null, confirmSubmit = false;
@@ -1417,6 +1417,7 @@ function renderBoard() {
     ${S.source === "notion" ? `<label for="cnt">Questions per subject
       <select id="cnt">${COUNTS.map(n => `<option ${n == S.count ? "selected" : ""}>${n}</option>`).join("")}</select></label>
     <label class="check" for="rev"><input type="checkbox" id="rev" ${S.includeReview ? "checked" : ""}> Include “Needs Review” rows</label>` : ""}
+    <label class="check" for="lognotion"><input type="checkbox" id="lognotion" ${S.logNotion ? "checked" : ""}> Log graded answers to my Performance &amp; Error Log</label>
     <label class="check" for="strict"><input type="checkbox" id="strict" ${S.strict ? "checked" : ""}> Strict mode (no paste, tab switches logged)</label>
     ${Object.keys(S.scores).length ? `<button id="reset">Clear scorecard</button>` : ""}
   </section>
@@ -1444,6 +1445,7 @@ function renderBoard() {
   $("#src").onchange = e => { S.source = e.target.value; sourceNote = ""; save(); render(); };
   if ($("#cnt")) $("#cnt").onchange = e => { S.count = +e.target.value; save(); render(); };
   if ($("#rev")) $("#rev").onchange = e => { S.includeReview = e.target.checked; save(); render(); };
+  $("#lognotion").onchange = e => { S.logNotion = e.target.checked; save(); };
   $("#strict").onchange = e => { S.strict = e.target.checked; save(); };
   const r = $("#reset");
   if (r) r.onclick = () => {
@@ -1483,6 +1485,7 @@ const verdict = (g, pts) => {
 function gradeBlock(g) {
   return `<div class="grade">
     <p class="label">${g.by === "claude" ? "Graded by Claude" : "Self-graded"}</p>
+    ${notionBadge(g)}
     ${g.comment ? `<p>${esc(g.comment)}</p>` : ""}
     ${g.missed?.length ? `<div><strong class="small">Missed or weak</strong><ul>${g.missed.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : ""}
     ${g.scrubbed ? `<p class="small muted">${g.scrubbed} statement${g.scrubbed > 1 ? "s" : ""} removed for citing law not found in the source answer.</p>` : ""}
@@ -1558,8 +1561,8 @@ function renderExam() {
   $("#submit").onclick = () => { confirmSubmit = true; render(); };
   if (confirmSubmit) { $("#cancel").onclick = () => { confirmSubmit = false; render(); }; $("#confirm").onclick = finishExam; }
   app.querySelectorAll("[data-selfmark]").forEach(b => b.onclick = () => {
-    E.checked[E.idx] = { score: q.pts * +b.dataset.selfmark, by: "self", comment: "", missed: [], model: "" };
-    checkNote = ""; save(); render();
+    E.checked[E.idx] = { score: q.pts * +b.dataset.selfmark, by: "self", comment: "", missed: [] };
+    checkNote = ""; save(); render(); logToNotion(E.subject, q, E.answers[E.idx], E.checked[E.idx], "review");
   });
   wireRegistry(qs.map((x, i) => i === E.idx ? x : null));
 
@@ -1594,12 +1597,13 @@ function feedbackPanel(q, g, busy) {
 
 async function checkCurrent() {
   const E = S.exam, i = E.idx, q = (E.qs || BANK[E.subject])[i], a = E.answers[i];
-  if (!a.trim()) { E.checked[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [], model: "" }; save(); return render(); }
+  if (!a.trim()) { E.checked[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [] }; save(); render(); return logToNotion(E.subject, q, a, E.checked[i], "review"); }
   if (!grader) grader = window.claude?.use ? await window.claude.use("sample").catch(() => null) : null;
   if (!grader) { checkNote = "self"; return render(); }
   checking = i; checkNote = ""; render();
   try {
     E.checked[i] = await gradeAnswer(q, a, subj(E.subject).name);
+    logToNotion(E.subject, q, a, E.checked[i], "review");
   } catch (e) {
     const msg = e?.code in ERR ? ERR[e.code] : "Grading failed. Press Next to try again, or mark it yourself.";
     checkNote = msg == null ? "self" : e?.code === "cancelled" ? "" : msg;
@@ -1675,8 +1679,10 @@ function renderReport() {
   app.querySelectorAll("[data-self]").forEach(b => b.onclick = () => {
     const i = +b.dataset.self, v = parseFloat($("#self" + i).value), max = qs[i].pts;
     if (isNaN(v)) return;
-    R.grades[i] = { ...(R.grades[i] || {}), score: Math.max(0, Math.min(max, v)), by: "self" };
+    const prev = R.grades[i];
+    R.grades[i] = { ...(prev || {}), score: Math.max(0, Math.min(max, v)), by: "self" };
     postScore(); save(); render();
+    if (!prev?.notion) logToNotion(R.subject, qs[i], R.answers[i], R.grades[i], R.mode);
   });
   wireRegistry(qs);
   wireClaude();
@@ -1754,6 +1760,55 @@ async function notionQuestions(id) {
   return all.map((q, i) => ({ ...q, pts: base + (i < extra ? 1 : 0) }));
 }
 
+/* ---------- Progress log: the viewer's Notion "2027 Bar — Performance & Error Log" ---------- */
+const PERF = { ds: "cbcc0567-fa25-4f50-89fb-39d14f228c4f", url: "https://app.notion.com/p/8ab4f3bb09a74c9c994c8b325efa1555",
+  subject: { pol: "Political & Public International Law", comtax: "Commercial & Taxation Laws", civ: "Civil Law & Land Titles and Deeds",
+    lab: "Labor Law & Social Legislation", crim: "Criminal Law", rem: "Remedial Law Ethics and Practical Exercises" } };
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+async function logToNotion(subjectId, q, answer, g, mode) {
+  if (!S.logNotion || !g || g.notion || !q.key) return;
+  g.notion = "pending"; save();
+  try {
+    await mcpReady;
+    if (!mcp) throw { code: "no_mcp" };
+    const pct = g.score / q.pts, today = new Date(), retest = new Date(today.getTime() + 864e5);
+    const yes = v => (v ? "__YES__" : "__NO__");
+    const registry = (q.cases || []).filter(c => c.src === "registry" || !c.src).map(c => c.url);
+    const outside = (q.cases || []).find(c => c.src === "lawphil" || c.src === "external");
+    const props = {
+      Question: `${q.origin || subj(subjectId).name}: ${q.q.slice(0, 90)}${q.q.length > 90 ? "…" : ""}`,
+      Subject: PERF.subject[subjectId],
+      "Question Type": /^\s*draft\b/i.test(q.q) || /\bDraft (a|the)\b/.test(q.q) ? "Practical Exercise" : "Essay",
+      "date:Date:start": ymd(today), "date:Date:is_datetime": 0,
+      Score: g.score, "Max Score": q.pts,
+      Notes: [`Bar Simulator · ${mode === "review" ? "Review mode" : "Bar simulation"} · ${g.by === "claude" ? "graded by Claude against the source answer" : "self-graded"}`,
+        g.comment, g.missed?.length ? "Missed: " + g.missed.join("; ") : ""].filter(Boolean).join("\n"),
+    };
+    if (g.irac) Object.assign(props, { "Issue Spotted": yes(g.irac.issue), "Rule Accurate": yes(g.irac.rule), "Application Adequate": yes(g.irac.application), "Conclusion Adequate": yes(g.irac.conclusion) });
+    if (pct < 0.75) Object.assign(props, { "date:Retest Date:start": ymd(retest), "date:Retest Date:is_datetime": 0 });
+    if (registry.length) props.Case = registry;
+    if (outside) props["Case / Doctrine Link"] = outside.url;
+    const clean = t => String(t || "").replace(/\r/g, "");
+    const content = `## Question\n${clean(q.q)}\n\n## My answer\n${clean(answer) || "(No answer written.)"}\n\n## Source answer\n${q.keyLabel || "Model answer"}, shown in the simulator.`;
+    const r = await mcp.callTool(NOTION.server, "notion-create-pages", { parent: { type: "data_source_id", data_source_id: PERF.ds }, pages: [{ properties: props, content }] });
+    g.notion = r?.payload?.pages?.[0]?.url || "logged";
+  } catch (e) {
+    g.notion = null; g.notionError = notionError(e).replace(/ Using the built-in set[^.]*\./, "");
+  }
+  save();
+  // Re-render only where the grade is on screen, never under an answer being typed.
+  if (S.view !== "exam" || S.exam?.checked?.[S.exam.idx] === g) render();
+}
+
+function notionBadge(g) {
+  if (!g || !S.logNotion) return "";
+  if (g.notion === "pending") return `<span class="small muted">Logging to Notion…</span>`;
+  if (g.notion) return `<span class="small muted">Logged to your <a href="${esc(g.notion.startsWith("http") ? g.notion : PERF.url)}" target="_blank" rel="noopener">Performance &amp; Error Log</a></span>`;
+  if (g.notionError) return `<span class="small" style="color:var(--warn)">Not logged: ${esc(g.notionError)}</span>`;
+  return "";
+}
+
 /* ---------- Claude grading (sample capability) ---------- */
 const ERR = { not_granted: null, sampling_disabled: null, not_declared: null, capability_disabled: null, capability_removed: null,
   rate_limited: "Claude is busy or your usage limit was reached. Try again later, or score it yourself.",
@@ -1803,12 +1858,13 @@ EXAMINEE'S ANSWER:
 ${a.slice(0, 12000)}
 
 Reply with only a JSON object:
-{"score": number from 0 to ${q.pts} in steps of 0.5, "comment": "2-4 sentences on what the answer got right and wrong, measured against the reference", "missed": ["each point of the reference answer that is missing or misstated, short"]}`;
+{"score": number from 0 to ${q.pts} in steps of 0.5, "comment": "2-4 sentences on what the answer got right and wrong, measured against the reference", "missed": ["each point of the reference answer that is missing or misstated, short"], "issue": true if the answer identified the issue in the reference, "rule": true if it stated the reference's legal basis accurately, "application": true if it applied that basis to the facts adequately, "conclusion": true if its conclusion matches the reference}`;
   const r = await grader.json(prompt, { modelTier: "default" });
   const sc = Math.max(0, Math.min(q.pts, Math.round((+r.score || 0) * 2) / 2));
   const c = scrub(String(r.comment || ""), ref, true), m = (Array.isArray(r.missed) ? r.missed.map(String) : []).map(x => scrub(x, ref));
   const missed = m.filter(x => x.ok).map(x => x.text);
-  return { score: sc, by: "claude", comment: c.text, missed, scrubbed: c.dropped + m.length - missed.length };
+  const irac = { issue: r.issue === true, rule: r.rule === true, application: r.application === true, conclusion: r.conclusion === true };
+  return { score: sc, by: "claude", comment: c.text, missed, scrubbed: c.dropped + m.length - missed.length, irac };
 }
 
 // Drops any sentence that cites a provision, statute, G.R. number or case absent from the reference answer.
@@ -1840,10 +1896,10 @@ async function gradeOne(i, el, batch) {
   const R = S.report, q = (R.qs || BANK[R.subject])[i], a = R.answers[i];
   const btn = el.querySelector("button"), note = el.querySelector("span");
   btn.disabled = true; note.textContent = "Claude is reading your answer…";
-  if (!a.trim()) { R.grades[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [], model: "" }; postScore(); save(); if (!batch) render(); return true; }
+  if (!a.trim()) { R.grades[i] = { score: 0, by: "claude", comment: "No answer was written.", missed: [] }; postScore(); save(); if (!batch) render(); logToNotion(R.subject, q, a, R.grades[i], R.mode); return true; }
   try {
     R.grades[i] = await gradeAnswer(q, a, subj(R.subject).name);
-    postScore(); save(); if (!batch) render(); return true;
+    postScore(); save(); if (!batch) render(); logToNotion(R.subject, q, a, R.grades[i], R.mode); return true;
   } catch (e) {
     const msg = e?.code in ERR ? ERR[e.code] : "Grading failed. Try again, or score it yourself.";
     if (msg == null) { el.innerHTML = ""; $("#bulk") && ($("#bulk").innerHTML = ""); return false; }
