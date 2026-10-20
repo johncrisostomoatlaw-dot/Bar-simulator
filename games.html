@@ -1,0 +1,762 @@
+<title>Mind Docket</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: the Bar Simulator's desk, turned into a recess room; a docket of games → one puzzle at a time */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --ink: #17202d; --muted: #5a6577; --rule: #d6dce5;
+  --accent: #7b1e2b; --accent-ink: #ffffff; --gold: #9c7a22; --line: #e3e8ef;
+  --good: #1f7a4d; --warn: #a3620a; --bad: #b42323; --soft: #f5f7fa; --hi: #f6ecd2; --hi2: #fbf6e8;
+  --f-display: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e131b; --surface: #161d28; --ink: #e5e9f0; --muted: #98a3b5; --rule: #2a3444;
+  --accent: #d86474; --accent-ink: #1a0f12; --gold: #d4b25a; --line: #222b39;
+  --good: #4cc08a; --warn: #e3a344; --bad: #f07272; --soft: #1b2331; --hi: #3a3220; --hi2: #262419; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e131b; --surface: #161d28; --ink: #e5e9f0; --muted: #98a3b5; --rule: #2a3444;
+  --accent: #d86474; --accent-ink: #1a0f12; --gold: #d4b25a; --line: #222b39;
+  --good: #4cc08a; --warn: #e3a344; --bad: #f07272; --soft: #1b2331; --hi: #3a3220; --hi2: #262419; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px }
+.wrap { max-width: 960px; margin: 0 auto }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; line-height: 1.25 }
+h1 { font-size: clamp(1.7rem, 4vw, 2.3rem) }
+h2 { font-size: 1.35rem }
+h3 { font-size: 1.05rem }
+p { margin: 0 }
+.label { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); font-weight: 600 }
+.muted { color: var(--muted) }
+.small { font-size: .85rem }
+button, select, input { font: inherit }
+button { cursor: pointer; border-radius: 6px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); padding: 8px 14px; font-weight: 600 }
+button:hover { border-color: var(--muted) }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+button.primary:hover { filter: brightness(1.08) }
+button:disabled { opacity: .5; cursor: not-allowed }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; min-width: 0 }
+.pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 9px; border-radius: 99px; border: 1px solid currentColor; font-variant-numeric: tabular-nums }
+.pill.good { color: var(--good) } .pill.bad { color: var(--bad) } .pill.idle { color: var(--muted) } .pill.warn { color: var(--warn) } .pill.acc { color: var(--accent) }
+
+/* Masthead */
+.mast { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; padding-block: 28px 20px; border-bottom: 3px double var(--rule); margin-bottom: 22px }
+.mast .seal { font-family: var(--f-display); font-style: italic; color: var(--gold) }
+
+/* Controls: segmented pickers */
+.controls { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-bottom: 22px }
+.ctl { display: flex; flex-direction: column; gap: 6px }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; background: var(--surface) }
+.seg button { border: 0; border-radius: 0; padding: 7px 14px; background: transparent; font-weight: 600; color: var(--muted) }
+.seg button + button { border-left: 1px solid var(--rule) }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink) }
+.seg button[aria-pressed="true"] .rank { color: inherit }
+.rank { font-family: var(--f-mono); font-size: .7rem; letter-spacing: .05em; color: var(--gold); margin-right: 6px }
+
+/* Docket of games */
+.docket { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px }
+.game { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.game .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
+.game .no { font-family: var(--f-mono); color: var(--gold); font-size: .78rem; font-weight: 700 }
+.rules { margin: 0; padding: 10px 12px; list-style: none; background: var(--soft); border-radius: 6px; font-size: .85rem; display: grid; gap: 2px }
+.rules li::before { content: "§ "; color: var(--gold); font-family: var(--f-display) }
+.game .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; flex-wrap: wrap }
+
+/* Game view */
+.bench { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+.timer { font-family: var(--f-mono); font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums }
+.timer.low { color: var(--bad) }
+.status { min-height: 1.6em; font-weight: 600 }
+.status.good { color: var(--good) } .status.bad { color: var(--bad) } .status.warn { color: var(--warn) }
+.verdict { border: 1px solid var(--good); border-radius: 8px; padding: 14px 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; background: var(--surface) }
+.verdict h3 { color: var(--good) }
+
+/* Crossword */
+.cw { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 760px) { .cw { grid-template-columns: minmax(0, 1fr) } }
+.board { display: grid; gap: 2px; background: var(--ink); border: 2px solid var(--ink); border-radius: 4px; padding: 0; width: max-content; max-width: 100% }
+.cell { position: relative; aspect-ratio: 1; background: var(--ink) }
+.cell.on { background: var(--surface) }
+.cell.on.word { background: var(--hi2) }
+.cell.on.cur { background: var(--hi) }
+.cell input { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; color: var(--ink); text-align: center; text-transform: uppercase;
+  font: 700 clamp(13px, 3.4vw, 19px)/1 var(--f-mono); padding: 10% 0 0; caret-color: transparent; border-radius: 0 }
+.cell input:focus { outline: none }
+.cell .n { position: absolute; top: 1px; left: 2px; font: 600 clamp(7px, 1.6vw, 10px)/1 var(--f-body); color: var(--muted); pointer-events: none; z-index: 1 }
+.cell.bad input, .sq.bad input { color: var(--bad) }
+.cell.rev input { color: var(--gold) }
+.clues { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; min-width: 0 }
+.clues ol { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px }
+.clues li { padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: .9rem; display: grid; grid-template-columns: 2.2em 1fr; gap: 4px }
+.clues li b { font-family: var(--f-mono); color: var(--accent) }
+.clues li.cur { background: var(--hi) }
+.clues li.done { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--rule) }
+.cluebar { font-family: var(--f-display); font-size: 1.02rem; padding: 10px 12px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 10px; min-height: 2.6em }
+
+/* Scramble */
+.tiles { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-block: 14px }
+.tile { width: 2.4rem; height: 2.6rem; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--rule); border-bottom-width: 3px; border-radius: 6px; font: 700 1.2rem var(--f-mono); color: var(--ink) }
+.answer { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center }
+.answer input { flex: 1 1 200px; max-width: 360px; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); color: var(--ink); font: 700 1.05rem var(--f-mono); text-transform: uppercase; letter-spacing: .12em }
+.clue { text-align: center; font-family: var(--f-display); font-size: 1.05rem; max-width: 56ch; margin-inline: auto; min-height: 1.7em }
+.shake { animation: shake .3s }
+@keyframes shake { 25% { transform: translateX(-5px) } 75% { transform: translateX(5px) } }
+table.tally { width: 100%; border-collapse: collapse; font-size: .9rem }
+.tally td, .tally th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+.tally td:first-child { font-family: var(--f-mono); font-weight: 700; white-space: nowrap }
+.tablewrap { overflow-x: auto }
+
+/* Memory */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 8px }
+.card { aspect-ratio: 3 / 4; border-radius: 8px; border: 1px solid var(--rule); background: var(--accent); color: var(--accent-ink); padding: 6px; display: grid; place-items: center; text-align: center; font-weight: 600; min-width: 0; transition: transform .15s }
+.card .back { font-family: var(--f-display); font-style: italic; font-size: 1.4rem; opacity: .7 }
+.card.up, .card.got { background: var(--surface); color: var(--ink) }
+.card.got { border-color: var(--good); opacity: .65 }
+.card .face { font-size: .82rem; line-height: 1.25; overflow-wrap: anywhere }
+.card .face.big { font-size: 2rem }
+.card .face.cite { font-family: var(--f-mono); color: var(--accent); font-size: .78rem }
+.card:active { transform: scale(.97) }
+
+/* Sudoku */
+.sudoku { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); width: min(100%, 460px); border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; background: var(--surface) }
+.sq { position: relative; aspect-ratio: 1; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule) }
+.sq:nth-child(9n) { border-right: 0 }
+.sq:nth-child(3n):not(:nth-child(9n)) { border-right: 2px solid var(--ink) }
+.sq:nth-child(n+19):nth-child(-n+27), .sq:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--ink) }
+.sq:nth-child(n+73) { border-bottom: 0 }
+.sq input { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; text-align: center; font: 600 clamp(15px, 4.4vw, 22px)/1 var(--f-mono); color: var(--accent); caret-color: transparent; border-radius: 0 }
+.sq input:focus { outline: none }
+.sq.given input { color: var(--ink); font-weight: 700 }
+.sq.peer { background: var(--hi2) }
+.sq.cur { background: var(--hi) }
+.sq.same input { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px }
+.pad { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: min(100%, 460px); margin-top: 12px }
+.pad button { font: 700 1.1rem var(--f-mono); padding: 9px 0 }
+
+@media (prefers-reduced-motion: reduce) { .shake { animation: none } .card { transition: none } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+// ---------- Word banks ----------
+const BANK = {
+  general: [
+    ["OCEAN","Vast body of salt water"],["PLANET","Body that orbits a star"],["VOLCANO","Mountain that can erupt"],
+    ["GALAXY","System of billions of stars"],["PIANO","Instrument with 88 keys"],["HARBOR","Sheltered water where ships dock"],
+    ["LANTERN","Portable light in a protective case"],["COMPASS","Its needle points north"],["GLACIER","Slow-moving river of ice"],
+    ["DESERT","Dry region with little rain"],["ECLIPSE","When one body hides another in the sky"],["PYRAMID","Egyptian tomb with triangular faces"],
+    ["ALPHABET","The letters, in order"],["MARATHON","Footrace of about 42 kilometres"],["BUTTERFLY","Insect that was once a caterpillar"],
+    ["THUNDER","Sound that follows lightning"],["ISLAND","Land surrounded by water"],["CANDLE","Wax light with a wick"],
+    ["MIRROR","Glass that reflects"],["LIBRARY","Place to borrow books"],["TELESCOPE","Instrument for viewing distant objects"],
+    ["ORCHESTRA","Large ensemble of musicians"],["RAINBOW","Arc of colours after rain"],["KANGAROO","Hopping marsupial of Australia"],
+    ["MAGNET","It attracts iron"],["CACTUS","Spiny desert plant"],["PENGUIN","Flightless bird of the southern seas"],
+    ["CASTLE","Fortified home of a lord"],["RIDDLE","Puzzling question"],["JUNGLE","Dense tropical forest"],
+    ["HORIZON","Line where sky meets earth"],["OXYGEN","Gas we breathe; symbol O"],["DIAMOND","Hardest natural gem"],
+    ["SATURN","The ringed planet"],["ANCHOR","Holds a ship in place"],["VIOLIN","Four-stringed instrument played with a bow"],
+    ["TORNADO","Violent rotating column of air"],["MANGO","Sweet fruit Guimaras is famous for"],["JEEPNEY","Iconic Philippine public vehicle"],
+    ["ADOBO","Dish braised in vinegar and soy sauce"],["BAMBOO","Tall grass used in building"],["TYPHOON","Tropical cyclone of the Western Pacific"],
+    ["SUNFLOWER","Tall yellow bloom that follows the sun"],["CHESS","Game of checks and checkmates"],["WHISPER","Speak very softly"],
+    ["PUZZLE","Something to solve"],["BRIDGE","Structure spanning a river"],["HONEY","Sweet food made by bees"],
+    ["EMBER","Glowing piece of a dying fire"],["QUILL","Feather pen"]
+  ],
+  bar: [
+    ["ESTOPPEL","Bars a party from denying a representation another relied upon (Art. 1431)"],
+    ["LACHES","Unreasonable delay in asserting a right, raising a presumption it was abandoned"],
+    ["DOLO","Felony by deliberate intent (Art. 3, RPC)"],["CULPA","Felony by imprudence, negligence or lack of skill"],
+    ["USUFRUCT","Right to enjoy another's property while preserving its form and substance (Art. 562)"],
+    ["EASEMENT","Encumbrance on an immovable for the benefit of another immovable or person (Art. 613)"],
+    ["NOVATION","Extinguishes an obligation by changing or substituting it (Art. 1291)"],
+    ["COMPENSATION","Extinguishes debts when two persons are creditors and debtors of each other (Art. 1278)"],
+    ["CONDONATION","Gratuitous renunciation of a debt by the creditor (Art. 1270)"],
+    ["ANTICHRESIS","Creditor takes the fruits of the debtor's immovable, applied to interest then principal (Art. 2132)"],
+    ["PLEDGE","Security over a movable delivered to the creditor"],
+    ["MORTGAGE","Accessory contract securing an obligation with immovable property, without transfer of possession"],
+    ["DATION","Alienation of property to the creditor in satisfaction of a money debt (Art. 1245)"],
+    ["LEGITIME","Part of the estate reserved by law for compulsory heirs (Art. 886)"],
+    ["CODICIL","Supplement or addition to a will (Art. 825)"],
+    ["PRETERITION","Total omission of a compulsory heir in the direct line (Art. 854)"],
+    ["COLLATION","Bringing donations back into the estate to compute the legitime"],
+    ["ESCHEAT","Reversion of property to the State when no heir survives (Rule 91)"],
+    ["AMPARO","Writ protecting the rights to life, liberty and security"],
+    ["CERTIORARI","Rule 65 remedy against grave abuse of discretion amounting to lack or excess of jurisdiction"],
+    ["MANDAMUS","Writ compelling performance of a ministerial duty"],
+    ["PROHIBITION","Writ commanding a tribunal to desist from further proceedings"],
+    ["INTERPLEADER","Action compelling conflicting claimants to litigate among themselves (Rule 62)"],
+    ["REPLEVIN","Provisional remedy to recover possession of personal property (Rule 60)"],
+    ["ATTACHMENT","Provisional remedy seizing property as security for a judgment (Rule 57)"],
+    ["INJUNCTION","Order to perform, or refrain from, a particular act (Rule 58)"],
+    ["DEMURRER","Motion to dismiss after the plaintiff rests, for insufficiency of evidence (Rule 33)"],
+    ["SUBPOENA","Process directing a person to testify or to produce documents"],
+    ["HEARSAY","Out-of-court statement offered to prove the truth of what it asserts"],
+    ["VENUE","Place where an action is tried"],
+    ["RECIDIVIST","Offender previously convicted by final judgment of a crime under the same RPC title"],
+    ["ALIBI","Weak defence that needs physical impossibility of presence at the scene"],
+    ["TREACHERY","Alevosia: means that insure execution without risk from the victim's defence"],
+    ["CONSPIRACY","Two or more persons agree on a felony and decide to commit it (Art. 8, RPC)"],
+    ["ENTRAPMENT","Lawful means to catch one already bent on crime, unlike instigation"],
+    ["PARRICIDE","Killing of one's parent, child, legitimate ascendant or descendant, or spouse (Art. 246, RPC)"],
+    ["ULTRAVIRES","Corporate act beyond the powers granted by law or the articles (2 words)"],
+    ["QUORUM","Majority needed to transact business at a meeting"],
+    ["PROXY","Written authority to vote another's shares"],
+    ["DIVIDEND","Distribution of unrestricted retained earnings to stockholders"],
+    ["RESJUDICATA","A matter finally adjudged, barring relitigation (2 words)"],
+    ["STAREDECISIS","Adhere to precedent and do not unsettle settled things (2 words)"],
+    ["OBITER","Remark in a decision not necessary to the ruling"],
+    ["LITISPENDENTIA","Another action pending between the same parties on the same cause (2 words)"],
+    ["MITTIMUS","Commitment order directing a jail to receive a prisoner"],
+    ["FORUMSHOPPING","Filing several suits on one cause in hope of a favourable ruling (2 words)"],
+    ["HABEASDATA","Writ protecting the right to privacy in information (2 words)"],
+    ["QUASIDELICT","Fault or negligence causing damage, with no pre-existing contract (Art. 2176; hyphenated)"],
+    ["DEPOSITION","Out-of-court testimony under oath, taken for use in a case"],
+    ["PROBATION","Release of a convict under supervision instead of serving sentence (PD 968)"]
+  ]
+};
+// Memory pairs for Bar mode: a term and the provision that governs it
+const CITES = [
+  ["Usufruct","Art. 562, NCC"],["Easement","Art. 613, NCC"],["Novation","Art. 1291, NCC"],["Compensation","Art. 1278, NCC"],
+  ["Condonation","Art. 1270, NCC"],["Antichresis","Art. 2132, NCC"],["Dation in payment","Art. 1245, NCC"],["Legitime","Art. 886, NCC"],
+  ["Codicil","Art. 825, NCC"],["Preterition","Art. 854, NCC"],["Quasi-delict","Art. 2176, NCC"],["Conspiracy","Art. 8, RPC"],
+  ["Parricide","Art. 246, RPC"],["Replevin","Rule 60"],["Preliminary attachment","Rule 57"],["Preliminary injunction","Rule 58"],
+  ["Interpleader","Rule 62"],["Certiorari","Rule 65"],["Habeas corpus","Rule 102"],["Escheat","Rule 91"],
+  ["Quo warranto","Rule 66"],["Expropriation","Rule 67"],["Receivership","Rule 59"],["Declaratory relief","Rule 63"]
+];
+const SYMBOLS = ["🍋","🌵","🐢","🎈","🧭","🌙","⚓","🎻","🦉","🍄","🪁","🐙","🌋","🔭","🧩","🥭","🐚","🪶"];
+
+// ---------- What each difficulty changes ----------
+const DIFFS = ["easy", "medium", "hard"];
+const DLABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const CFG = {
+  crossword: {
+    easy:   { words: 6,  maxLen: 8,  live: true,  check: true,  reveals: 3 },
+    medium: { words: 9,  maxLen: 11, live: false, check: true,  reveals: 1 },
+    hard:   { words: 13, maxLen: 14, live: false, check: false, reveals: 0 }
+  },
+  scramble: {
+    easy:   { n: 5,  min: 4, max: 7,  secs: 150, clue: true,  first: true },
+    medium: { n: 7,  min: 5, max: 10, secs: 150, clue: true,  first: false },
+    hard:   { n: 10, min: 6, max: 14, secs: 150, clue: false, first: false }
+  },
+  memory: {
+    easy:   { pairs: 6,  peek: 3000 },
+    medium: { pairs: 10, peek: 1500 },
+    hard:   { pairs: 15, peek: 0 }
+  },
+  sudoku: {
+    easy:   { clues: 40, conflicts: true },
+    medium: { clues: 32, conflicts: true },
+    hard:   { clues: 25, conflicts: false }
+  }
+};
+const GAMES = {
+  crossword: { name: "Crossword", blurb: "Fill the grid from the clues across and down.", themed: true, scoreBy: "time",
+    rules: c => [`${c.words} words, up to ${c.maxLen} letters`, c.live ? "Wrong letters turn red as you type" : c.check ? "Check the grid on demand" : "No checking until the grid is full",
+      c.reveals ? `${c.reveals} letter reveal${c.reveals > 1 ? "s" : ""}` : "No reveals"] },
+  scramble: { name: "Anagram Sprint", blurb: "Unscramble each word before the clock runs out.", themed: true, scoreBy: "score",
+    rules: c => [`${c.n} words of ${c.min} to ${c.max} letters in ${fmt(c.secs * 1000)}`, c.clue ? "Clue shown" : "Clue hidden; a hint shows it",
+      c.first ? "First letter given" : "No letters given"] },
+  memory: { name: "Memory Match", blurb: "Flip cards two at a time and find every pair.", themed: true, scoreBy: "time",
+    rules: c => [`${c.pairs} pairs (${c.pairs * 2} cards)`, c.peek ? `All cards shown for ${c.peek / 1000} s at the start` : "No preview", "Bar mode pairs a term with its article or rule"] },
+  sudoku: { name: "Sudoku", blurb: "Place 1 to 9 once in every row, column and box.", themed: false, scoreBy: "time",
+    rules: c => [`${c.clues} given numbers`, c.conflicts ? "Clashing numbers turn red" : "No clash warnings", "Same puzzle in either theme"] }
+};
+
+// ---------- Helpers ----------
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+function hash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, rng) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+
+const PREF_KEY = "mdk:prefs", STAT_KEY = "mdk:stats";
+function loadJSON(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } }
+function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+const P = Object.assign({ diff: "easy", theme: "bar", mode: "daily" }, loadJSON(PREF_KEY, {}));
+const STATS = loadJSON(STAT_KEY, {});
+const statKey = (g, d, t) => `${g}:${d}:${GAMES[g].themed ? t : "any"}`;
+// Only finished games count; an abandoned puzzle leaves no mark
+function record(g, value) {
+  const k = statKey(g, P.diff, P.theme), s = STATS[k] || { won: 0, best: null };
+  s.won++;
+  if (s.best == null || (GAMES[g].scoreBy === "score" ? value > s.best : value < s.best)) s.best = value;
+  STATS[k] = s; saveJSON(STAT_KEY, STATS);
+}
+function statLine(g) {
+  const s = STATS[statKey(g, P.diff, P.theme)];
+  if (!s || !s.won) return "Not finished yet";
+  return `${s.won} finished · best ${GAMES[g].scoreBy === "score" ? `${s.best} pts` : fmt(s.best)}`;
+}
+
+// ---------- Shell ----------
+const app = $("#app");
+let cleanup = null, current = null;
+
+function seg(name, label, opts, value) {
+  return `<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(([v, l, extra]) =>
+    `<button type="button" data-${name}="${v}" aria-pressed="${v === value}">${extra || ""}${esc(l)}</button>`).join("")}</div>`;
+}
+const diffSeg = () => seg("diff", "Difficulty", DIFFS.map((d, i) => [d, DLABEL[d], `<span class="rank">${"I".repeat(i + 1)}</span>`]), P.diff);
+function bindSegs(root, onChange) {
+  root.querySelectorAll("[data-diff],[data-theme-pick],[data-mode]").forEach(b => b.addEventListener("click", () => {
+    if (b.dataset.diff) P.diff = b.dataset.diff;
+    if (b.dataset.themePick) P.theme = b.dataset.themePick;
+    if (b.dataset.mode) P.mode = b.dataset.mode;
+    saveJSON(PREF_KEY, P); onChange();
+  }));
+}
+
+function hub() {
+  if (cleanup) { cleanup(); cleanup = null; }
+  current = null;
+  app.innerHTML = `
+  <header class="mast">
+    <div>
+      <p class="label">Recess · Between sittings</p>
+      <h1>Mind Docket</h1>
+      <p class="muted">Short puzzles to keep the mind sharp. Bar mode draws on doctrines, maxims and remedies.</p>
+    </div>
+    <p class="seal">Mens sana in corpore sano</p>
+  </header>
+  <div class="controls">
+    <div class="ctl"><span class="label">Difficulty</span>${diffSeg()}</div>
+    <div class="ctl"><span class="label">Words from</span>${seg("theme-pick", "Words from", [["bar", "Bar review"], ["general", "General"]], P.theme)}</div>
+    <div class="ctl"><span class="label">Puzzle</span>${seg("mode", "Puzzle", [["daily", "Today's"], ["fresh", "Fresh"]], P.mode)}</div>
+  </div>
+  <div class="docket">${Object.entries(GAMES).map(([id, g], i) => `
+    <article class="game">
+      <div class="top"><h2>${esc(g.name)}</h2><span class="no">No. ${i + 1}</span></div>
+      <p class="muted small">${esc(g.blurb)}</p>
+      <ul class="rules" aria-label="${DLABEL[P.diff]} rules">${g.rules(CFG[id][P.diff]).map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+      <div class="foot"><span class="pill idle">${esc(statLine(id))}</span><button class="primary" data-play="${id}">Play ${DLABEL[P.diff].toLowerCase()}</button></div>
+    </article>`).join("")}
+  </div>
+  <p class="muted small" style="margin-top:18px">${P.mode === "daily" ? `Today's puzzles (${today()}) are the same for everyone, all day.` : "Fresh puzzles are new every time."} Progress is kept in this browser only.</p>`;
+  bindSegs(app, hub);
+  app.querySelectorAll("[data-play]").forEach(b => b.addEventListener("click", () => play(b.dataset.play)));
+}
+
+function play(id, again) {
+  if (cleanup) { cleanup(); cleanup = null; }
+  current = id;
+  const g = GAMES[id], cfg = CFG[id][P.diff];
+  const seed = P.mode === "daily" && !again ? hash(`${today()}|${id}|${P.diff}|${g.themed ? P.theme : ""}`) : (Math.random() * 2 ** 32) >>> 0;
+  const rng = mulberry(seed);
+  app.innerHTML = `
+  <div class="bench">
+    <div class="row"><button id="back">All games</button><h2>${esc(g.name)}</h2>
+      ${g.themed ? `<span class="pill acc">${P.theme === "bar" ? "Bar review" : "General"}</span>` : ""}
+      ${P.mode === "daily" && !again ? `<span class="pill idle">Today's</span>` : ""}</div>
+    <div class="row">${diffSeg()}<span class="timer" id="timer">0:00</span><button id="again">New puzzle</button></div>
+  </div>
+  <div id="stage"></div>`;
+  $("#back").onclick = hub;
+  $("#again").onclick = () => play(id, true);
+  bindSegs($(".bench"), () => play(id));
+  cleanup = MAKERS[id]($("#stage"), cfg, rng, BANK[P.theme]);
+}
+
+// A shared clock: counts up, or down when given a limit
+function clock(limitMs, onEnd) {
+  const el = $("#timer"), t0 = Date.now(); let stopped = false;
+  const tick = () => {
+    if (stopped) return;
+    const used = Date.now() - t0;
+    if (limitMs) { el.textContent = fmt(limitMs - used); el.classList.toggle("low", limitMs - used < 20000); if (used >= limitMs) { stop(); onEnd(); } }
+    else el.textContent = fmt(used);
+  };
+  const id = setInterval(tick, 250); tick();
+  function stop() { stopped = true; clearInterval(id); return Date.now() - t0; }
+  return { stop, elapsed: () => Date.now() - t0 };
+}
+function verdict(stage, title, detail, gameId) {
+  const box = document.createElement("div");
+  box.className = "verdict";
+  box.innerHTML = `<div><h3>${esc(title)}</h3><p class="muted small">${esc(detail)}</p></div><div class="row"><button id="v-again" class="primary">Play again</button><button id="v-hub">All games</button></div>`;
+  stage.prepend(box);
+  $("#v-again").onclick = () => play(gameId, true);
+  $("#v-hub").onclick = hub;
+  box.scrollIntoView({ block: "nearest" });
+}
+
+// ---------- Crossword ----------
+function buildCrossword(bank, cfg, rng) {
+  const pool = bank.filter(([a]) => a.length >= 3 && a.length <= cfg.maxLen);
+  let best = null;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const res = tryCrossword(shuffle(pool, rng), cfg.words, 15, rng);
+    const area = (res.maxR - res.minR + 1) * (res.maxC - res.minC + 1);
+    if (!best || res.placed.length > best.placed.length || (res.placed.length === best.placed.length && area < best.area)) best = { ...res, area };
+    if (best.placed.length >= cfg.words && attempt >= 15) break;
+  }
+  // Normalise to the top-left and number the starting cells in reading order
+  const { placed, minR, minC, maxR, maxC } = best;
+  placed.forEach(p => { p.r -= minR; p.c -= minC; });
+  const H = maxR - minR + 1, W = maxC - minC + 1;
+  const starts = [...new Set(placed.map(p => p.r * W + p.c))].sort((a, b) => a - b);
+  placed.forEach(p => p.n = starts.indexOf(p.r * W + p.c) + 1);
+  const grid = Array.from({ length: H }, () => Array(W).fill(null));
+  placed.forEach(p => [...p.a].forEach((ch, i) => { grid[p.r + (p.dir === "D" ? i : 0)][p.c + (p.dir === "A" ? i : 0)] = ch; }));
+  return { placed, grid, H, W };
+}
+function tryCrossword(words, target, maxSize, rng) {
+  const cells = new Map(), placed = [];
+  let minR = 0, maxR = 0, minC = 0, maxC = 0;
+  const key = (r, c) => r + "," + c;
+  function fits(a, r, c, dir) {
+    const dr = dir === "D" ? 1 : 0, dc = dir === "A" ? 1 : 0, L = a.length;
+    if (cells.has(key(r - dr, c - dc)) || cells.has(key(r + dr * L, c + dc * L))) return -1;
+    if (Math.max(maxR, r + dr * (L - 1)) - Math.min(minR, r) >= maxSize || Math.max(maxC, c + dc * (L - 1)) - Math.min(minC, c) >= maxSize) return -1;
+    let inter = 0;
+    for (let i = 0; i < L; i++) {
+      const rr = r + dr * i, cc = c + dc * i, cell = cells.get(key(rr, cc));
+      if (cell) { if (cell.ch !== a[i] || cell.dirs.has(dir)) return -1; inter++; }
+      else if (cells.has(key(rr + dc, cc + dr)) || cells.has(key(rr - dc, cc - dr))) return -1;
+    }
+    return inter;
+  }
+  function put(w, r, c, dir) {
+    const dr = dir === "D" ? 1 : 0, dc = dir === "A" ? 1 : 0;
+    [...w[0]].forEach((ch, i) => {
+      const k = key(r + dr * i, c + dc * i), cell = cells.get(k) || { ch, dirs: new Set(), r: r + dr * i, c: c + dc * i };
+      cell.dirs.add(dir); cells.set(k, cell);
+    });
+    minR = Math.min(minR, r); minC = Math.min(minC, c); maxR = Math.max(maxR, r + dr * (w[0].length - 1)); maxC = Math.max(maxC, c + dc * (w[0].length - 1));
+    placed.push({ a: w[0], clue: w[1], r, c, dir });
+  }
+  put(words[0], 0, 0, rng() < .5 ? "A" : "D");
+  for (const w of words.slice(1)) {
+    if (placed.length >= target) break;
+    let opts = [], top = 0;
+    for (const cell of cells.values()) for (let i = 0; i < w[0].length; i++) {
+      if (w[0][i] !== cell.ch) continue;
+      for (const dir of ["A", "D"]) {
+        const r = dir === "D" ? cell.r - i : cell.r, c = dir === "A" ? cell.c - i : cell.c, s = fits(w[0], r, c, dir);
+        if (s > top) { top = s; opts = []; }
+        if (s > 0 && s === top) opts.push([r, c, dir]);
+      }
+    }
+    if (opts.length) { const [r, c, dir] = opts[Math.floor(rng() * opts.length)]; put(w, r, c, dir); }
+  }
+  return { placed, minR, maxR, minC, maxC };
+}
+
+function crossword(stage, cfg, rng, bank) {
+  const { placed, grid, H, W } = buildCrossword(bank, cfg, rng);
+  let reveals = cfg.reveals, dir = "A", cur = null, done = false, revealed = 0;
+  const across = placed.filter(p => p.dir === "A").sort((a, b) => a.n - b.n), down = placed.filter(p => p.dir === "D").sort((a, b) => a.n - b.n);
+  const startNo = {}; placed.forEach(p => startNo[p.r + "," + p.c] = p.n);
+  stage.innerHTML = `
+  <div class="cw">
+    <div>
+      <div class="cluebar" id="cluebar"></div>
+      <div class="board" style="grid-template-columns:repeat(${W}, minmax(0, 2.3rem))">${grid.map((row, r) => row.map((ch, c) => ch
+        ? `<div class="cell on" data-r="${r}" data-c="${c}">${startNo[r + "," + c] ? `<span class="n">${startNo[r + "," + c]}</span>` : ""}<input id="cw-${r}-${c}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Row ${r + 1}, column ${c + 1}"></div>`
+        : `<div class="cell"></div>`).join("")).join("")}</div>
+      <div class="row" style="margin-top:12px">
+        ${cfg.check && !cfg.live ? `<button id="cw-check">Check grid</button>` : ""}
+        ${cfg.reveals ? `<button id="cw-reveal">Reveal letter (<span id="cw-left">${reveals}</span>)</button>` : ""}
+        <span class="status" id="cw-status"></span>
+      </div>
+    </div>
+    <div class="clues">
+      <div><span class="label">Across</span><ol>${across.map(p => `<li data-w="${placed.indexOf(p)}"><b>${p.n}</b><span>${esc(p.clue)} <span class="muted">(${p.a.length})</span></span></li>`).join("")}</ol></div>
+      <div><span class="label">Down</span><ol>${down.map(p => `<li data-w="${placed.indexOf(p)}"><b>${p.n}</b><span>${esc(p.clue)} <span class="muted">(${p.a.length})</span></span></li>`).join("")}</ol></div>
+    </div>
+  </div>`;
+  const timer = clock();
+  const inp = (r, c) => grid[r]?.[c] ? $(`#cw-${r}-${c}`, stage) : null;
+  const wordOf = (r, c, d) => placed.find(p => p.dir === d && (d === "A" ? p.r === r && c >= p.c && c < p.c + p.a.length : p.c === c && r >= p.r && r < p.r + p.a.length));
+  const status = (msg, cls = "") => { const s = $("#cw-status"); s.textContent = msg; s.className = "status " + cls; };
+
+  function paint() {
+    stage.querySelectorAll(".cell.on").forEach(el => el.classList.remove("cur", "word"));
+    stage.querySelectorAll(".clues li").forEach(li => li.classList.remove("cur"));
+    if (!cur) return;
+    const w = wordOf(cur.r, cur.c, dir);
+    if (w) {
+      for (let i = 0; i < w.a.length; i++) stage.querySelector(`.cell[data-r="${w.r + (w.dir === "D" ? i : 0)}"][data-c="${w.c + (w.dir === "A" ? i : 0)}"]`).classList.add("word");
+      stage.querySelector(`.clues li[data-w="${placed.indexOf(w)}"]`).classList.add("cur");
+      $("#cluebar").innerHTML = `<b style="font-family:var(--f-mono);color:var(--accent)">${w.n}${w.dir === "A" ? " Across" : " Down"}</b> · ${esc(w.clue)}`;
+    }
+    stage.querySelector(`.cell[data-r="${cur.r}"][data-c="${cur.c}"]`).classList.add("cur");
+  }
+  function go(r, c) { const el = inp(r, c); if (el) el.focus(); }
+  function mark(r, c) {
+    const el = inp(r, c), cell = el.parentElement;
+    if (cfg.live) cell.classList.toggle("bad", !!el.value && el.value !== grid[r][c]);
+    else cell.classList.remove("bad");
+  }
+  function crossOff() {
+    placed.forEach((p, i) => {
+      const full = [...p.a].every((ch, k) => inp(p.r + (p.dir === "D" ? k : 0), p.c + (p.dir === "A" ? k : 0)).value);
+      stage.querySelector(`.clues li[data-w="${i}"]`).classList.toggle("done", full);
+    });
+  }
+  function judge() {
+    let empty = 0, wrong = 0;
+    grid.forEach((row, r) => row.forEach((ch, c) => { if (!ch) return; const v = inp(r, c).value; if (!v) empty++; else if (v !== ch) wrong++; }));
+    if (empty) { status(""); return; }
+    if (wrong) { status(cfg.check ? `Grid full, but ${wrong} letter${wrong > 1 ? "s are" : " is"} wrong.` : "Grid full, but something is wrong.", "bad"); return; }
+    done = true;
+    const ms = timer.stop();
+    stage.querySelectorAll(".cell input").forEach(i => i.readOnly = true);
+    record("crossword", ms);
+    status("");
+    verdict(stage, `Solved in ${fmt(ms)}`, `${placed.length} words${revealed ? `, ${revealed} letter${revealed > 1 ? "s" : ""} revealed` : ""}. ${statLine("crossword")}.`, "crossword");
+  }
+
+  stage.querySelectorAll(".cell.on").forEach(cell => {
+    const r = +cell.dataset.r, c = +cell.dataset.c, el = cell.querySelector("input");
+    el.addEventListener("focus", () => {
+      if (!wordOf(r, c, dir)) dir = dir === "A" ? "D" : "A";
+      cur = { r, c }; el.select(); paint();
+    });
+    el.addEventListener("mousedown", () => {
+      if (cur && cur.r === r && cur.c === c && wordOf(r, c, dir === "A" ? "D" : "A")) { dir = dir === "A" ? "D" : "A"; paint(); }
+    });
+    el.addEventListener("input", () => {
+      if (done || el.readOnly) return;
+      const ch = el.value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
+      el.value = ch; mark(r, c);
+      crossOff();
+      if (ch) { const nr = r + (dir === "D" ? 1 : 0), nc = c + (dir === "A" ? 1 : 0); if (wordOf(nr, nc, dir)) go(nr, nc); }
+      judge();
+    });
+    el.addEventListener("keydown", e => {
+      const moves = { ArrowLeft: [0, -1, "A"], ArrowRight: [0, 1, "A"], ArrowUp: [-1, 0, "D"], ArrowDown: [1, 0, "D"] };
+      if (moves[e.key]) {
+        e.preventDefault();
+        const [dr, dc, d] = moves[e.key];
+        if (dir !== d && wordOf(r, c, d)) { dir = d; paint(); return; }
+        let nr = r + dr, nc = c + dc;
+        while (nr >= 0 && nr < H && nc >= 0 && nc < W && !grid[nr][nc]) { nr += dr; nc += dc; }
+        go(nr, nc);
+      } else if (e.key === "Backspace") {
+        if (el.readOnly) { e.preventDefault(); return; }
+        if (!el.value) {
+          e.preventDefault();
+          const pr = r - (dir === "D" ? 1 : 0), pc = c - (dir === "A" ? 1 : 0), prev = inp(pr, pc);
+          if (prev && wordOf(pr, pc, dir)) { prev.focus(); if (!prev.readOnly) { prev.value = ""; mark(pr, pc); crossOff(); } }
+        }
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        const list = [...across, ...down], w = wordOf(r, c, dir), next = list[(list.indexOf(w) + (e.shiftKey ? list.length - 1 : 1)) % list.length];
+        dir = next.dir; go(next.r, next.c);
+      }
+    });
+  });
+  stage.querySelectorAll(".clues li").forEach(li => li.addEventListener("click", () => {
+    const p = placed[+li.dataset.w]; dir = p.dir;
+    for (let k = 0; k < p.a.length; k++) { const r = p.r + (p.dir === "D" ? k : 0), c = p.c + (p.dir === "A" ? k : 0); if (!inp(r, c).value) return go(r, c); }
+    go(p.r, p.c);
+  }));
+  $("#cw-check")?.addEventListener("click", () => {
+    let wrong = 0;
+    grid.forEach((row, r) => row.forEach((ch, c) => { if (!ch) return; const el = inp(r, c), bad = !!el.value && el.value !== ch; el.parentElement.classList.toggle("bad", bad); wrong += bad; }));
+    status(wrong ? `${wrong} wrong letter${wrong > 1 ? "s" : ""} marked in red.` : "Everything so far is right.", wrong ? "bad" : "good");
+  });
+  $("#cw-reveal")?.addEventListener("click", () => {
+    if (!cur || !reveals || done) { if (!cur) status("Select a square first.", "warn"); return; }
+    const el = inp(cur.r, cur.c);
+    if (el.readOnly) return;
+    el.value = grid[cur.r][cur.c]; el.readOnly = true; el.parentElement.classList.remove("bad"); el.parentElement.classList.add("rev");
+    reveals--; revealed++; $("#cw-left").textContent = reveals; if (!reveals) $("#cw-reveal").disabled = true;
+    crossOff(); judge();
+  });
+  dir = placed[0].dir; go(placed[0].r, placed[0].c);
+  return () => timer.stop();
+}
+
+// ---------- Anagram Sprint ----------
+function scramble(stage, cfg, rng, bank) {
+  const pool = bank.filter(([a]) => a.length >= cfg.min && a.length <= cfg.max);
+  const words = shuffle(pool, rng).slice(0, cfg.n).map(([a, clue]) => {
+    let mix = a; for (let k = 0; k < 12 && mix === a; k++) mix = shuffle([...a], rng).join("");
+    return { a, clue, mix, prefix: cfg.first ? 1 : 0, showClue: cfg.clue, hints: 0, result: null };
+  });
+  let i = 0, score = 0, over = false;
+  stage.innerHTML = `
+  <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+    <div class="row" style="justify-content:space-between"><span class="label" id="sc-pos"></span><span class="pill acc" id="sc-score">0 pts</span></div>
+    <div class="tiles" id="sc-tiles"></div>
+    <p class="clue" id="sc-clue"></p>
+    <form class="answer" id="sc-form" autocomplete="off">
+      <input id="sc-in" aria-label="Your answer" autocapitalize="characters" spellcheck="false">
+      <button class="primary" type="submit">Submit</button>
+      <button type="button" id="sc-hint">Hint (−2)</button>
+      <button type="button" id="sc-skip">Skip</button>
+    </form>
+    <p class="status" id="sc-status" style="text-align:center"></p>
+  </div>`;
+  const timer = clock(cfg.secs * 1000, () => finish("Time is up."));
+  const input = $("#sc-in");
+  function show() {
+    const w = words[i];
+    $("#sc-pos").textContent = `Word ${i + 1} of ${words.length} · ${w.a.length} letters`;
+    $("#sc-tiles").innerHTML = [...w.mix].map(ch => `<span class="tile">${ch}</span>`).join("");
+    $("#sc-clue").innerHTML = (w.showClue ? esc(w.clue) : `<span class="muted">Clue hidden</span>`) + (w.prefix ? ` <span class="muted">· starts with</span> <b style="font-family:var(--f-mono)">${w.a.slice(0, w.prefix)}</b>` : "");
+    input.value = ""; input.focus();
+  }
+  function next() { i++; if (i >= words.length) finish("All words done."); else show(); }
+  function finish(why) {
+    if (over) return; over = true;
+    timer.stop();
+    $("#sc-form").querySelectorAll("input,button").forEach(b => b.disabled = true);
+    const solved = words.filter(w => w.result === "ok").length;
+    if (solved) record("scramble", score);
+    $("#sc-status").textContent = "";
+    stage.insertAdjacentHTML("beforeend", `<div class="panel" style="margin-top:14px"><h3>Tally</h3><div class="tablewrap"><table class="tally"><tbody>${words.map(w =>
+      `<tr><td>${w.a}</td><td>${w.result === "ok" ? `<span class="pill good">Solved</span>` : w.result === "skip" ? `<span class="pill warn">Skipped</span>` : `<span class="pill idle">Unseen</span>`}</td><td>${esc(w.clue)}</td></tr>`).join("")}</tbody></table></div></div>`);
+    verdict(stage, `${score} points`, `${why} ${solved} of ${words.length} solved. ${statLine("scramble")}.`, "scramble");
+  }
+  $("#sc-form").addEventListener("submit", e => {
+    e.preventDefault(); if (over) return;
+    const w = words[i], guess = input.value.toUpperCase().replace(/[^A-Z]/g, "");
+    if (!guess) return;
+    if (guess === w.a) {
+      const pts = Math.max(1, w.a.length - w.hints * 2); score += pts; w.result = "ok";
+      $("#sc-score").textContent = `${score} pts`;
+      $("#sc-status").className = "status good"; $("#sc-status").textContent = `${w.a}, +${pts}`;
+      next();
+    } else {
+      $("#sc-status").className = "status bad"; $("#sc-status").textContent = "Not quite.";
+      input.classList.remove("shake"); void input.offsetWidth; input.classList.add("shake");
+    }
+  });
+  $("#sc-hint").onclick = () => {
+    const w = words[i];
+    if (!w.showClue) w.showClue = true; else if (w.prefix < w.a.length - 1) w.prefix++; else return;
+    w.hints++; show();
+  };
+  $("#sc-skip").onclick = () => { words[i].result = "skip"; $("#sc-status").className = "status warn"; $("#sc-status").textContent = `Skipped ${words[i].a}`; next(); };
+  show();
+  return () => { over = true; timer.stop(); };
+}
+
+// ---------- Memory Match ----------
+function memory(stage, cfg, rng) {
+  const deck = P.theme === "bar"
+    ? shuffle(CITES, rng).slice(0, cfg.pairs).flatMap(([t, c], pid) => [{ pid, html: `<span class="face">${esc(t)}</span>` }, { pid, html: `<span class="face cite">${esc(c)}</span>` }])
+    : shuffle(SYMBOLS, rng).slice(0, cfg.pairs).flatMap((s, pid) => [0, 1].map(() => ({ pid, html: `<span class="face big">${s}</span>` })));
+  const cards = shuffle(deck, rng);
+  let open = [], moves = 0, got = 0, lock = !!cfg.peek, over = false, timer = null, wait = null;
+  stage.innerHTML = `
+  <div class="row" style="justify-content:space-between;margin-bottom:12px"><span class="status" id="mm-status">${cfg.peek ? "Memorise the cards…" : ""}</span><span class="pill idle" id="mm-moves">0 moves · 0 of ${cfg.pairs} pairs</span></div>
+  <div class="cards">${cards.map((c, k) => `<button class="card${cfg.peek ? " up" : ""}" data-k="${k}" aria-label="Card ${k + 1}">${cfg.peek ? c.html : `<span class="back">§</span>`}</button>`).join("")}</div>`;
+  const btn = k => stage.querySelector(`.card[data-k="${k}"]`);
+  const face = (k, up) => { const b = btn(k); b.classList.toggle("up", up); b.innerHTML = up ? cards[k].html : `<span class="back">§</span>`; };
+  function begin() { lock = false; $("#mm-status").textContent = ""; cards.forEach((_, k) => face(k, false)); timer = clock(); }
+  if (cfg.peek) wait = setTimeout(begin, cfg.peek); else timer = clock();
+  stage.querySelectorAll(".card").forEach(b => b.addEventListener("click", () => {
+    const k = +b.dataset.k;
+    if (lock || over || b.classList.contains("up") || b.classList.contains("got")) return;
+    face(k, true); open.push(k);
+    if (open.length < 2) return;
+    moves++;
+    const [x, y] = open; open = [];
+    if (cards[x].pid === cards[y].pid) {
+      btn(x).classList.add("got"); btn(y).classList.add("got"); got++;
+      if (got === cfg.pairs) {
+        over = true; const ms = timer.stop(); record("memory", ms);
+        verdict(stage, `Cleared in ${fmt(ms)}`, `${moves} moves for ${cfg.pairs} pairs. ${statLine("memory")}.`, "memory");
+      }
+    } else { lock = true; wait = setTimeout(() => { face(x, false); face(y, false); lock = false; }, 850); }
+    $("#mm-moves").textContent = `${moves} moves · ${got} of ${cfg.pairs} pairs`;
+  }));
+  return () => { clearTimeout(wait); timer?.stop(); };
+}
+
+// ---------- Sudoku ----------
+const PEERS = Array.from({ length: 81 }, (_, i) => {
+  const r = Math.floor(i / 9), c = i % 9, br = r - r % 3, bc = c - c % 3, s = new Set();
+  for (let k = 0; k < 9; k++) { s.add(r * 9 + k); s.add(k * 9 + c); s.add((br + Math.floor(k / 3)) * 9 + bc + k % 3); }
+  s.delete(i); return [...s];
+});
+const candidates = (g, i) => { let m = 0x3FE; for (const p of PEERS[i]) m &= ~(1 << g[p]); return m; };
+function solveCount(g, limit) {
+  let best = -1, bestM = 0, bestN = 10;
+  for (let i = 0; i < 81; i++) if (!g[i]) {
+    const m = candidates(g, i), n = popcount(m);
+    if (n < bestN) { best = i; bestM = m; bestN = n; if (!n) return 0; }
+  }
+  if (best < 0) return 1;
+  let count = 0;
+  for (let d = 1; d <= 9 && count < limit; d++) if (bestM & 1 << d) { g[best] = d; count += solveCount(g, limit - count); }
+  g[best] = 0; return count;
+}
+function popcount(m) { let n = 0; while (m) { m &= m - 1; n++; } return n; }
+function fillGrid(g, rng) {
+  const i = g.indexOf(0); if (i < 0) return true;
+  for (const d of shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], rng)) if (candidates(g, i) & 1 << d) { g[i] = d; if (fillGrid(g, rng)) return true; }
+  g[i] = 0; return false;
+}
+function makeSudoku(clues, rng) {
+  const sol = Array(81).fill(0); fillGrid(sol, rng);
+  const puz = sol.slice(); let left = 81;
+  for (const i of shuffle([...Array(81).keys()], rng)) {
+    if (left <= clues) break;
+    const keep = puz[i]; puz[i] = 0;
+    if (solveCount(puz.slice(), 2) !== 1) puz[i] = keep; else left--;
+  }
+  return { sol, puz };
+}
+function sudoku(stage, cfg, rng) {
+  const { sol, puz } = makeSudoku(cfg.clues, rng);
+  let cur = null, over = false;
+  stage.innerHTML = `
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <div class="sudoku" id="sd">${puz.map((v, i) => `<div class="sq${v ? " given" : ""}" data-i="${i}"><input id="sd-${i}" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="Row ${Math.floor(i / 9) + 1}, column ${i % 9 + 1}" ${v ? `value="${v}" readonly` : ""}></div>`).join("")}</div>
+    <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-n="${n}">${n}</button>`).join("")}<button data-n="0" aria-label="Erase">⌫</button></div>
+    <p class="status" id="sd-status"></p>
+    <p class="muted small">${81 - puz.filter(Boolean).length} squares to fill.</p>
+  </div>`;
+  const timer = clock();
+  const el = i => $(`#sd-${i}`, stage), val = i => +el(i).value || 0;
+  function paint() {
+    stage.querySelectorAll(".sq").forEach(sq => {
+      const i = +sq.dataset.i, v = val(i);
+      sq.classList.toggle("cur", i === cur);
+      sq.classList.toggle("peer", cur != null && PEERS[cur].includes(i));
+      sq.classList.toggle("same", cur != null && !!v && v === val(cur));
+      sq.classList.toggle("bad", cfg.conflicts && !!v && PEERS[i].some(p => val(p) === v));
+    });
+  }
+  function set(i, n) {
+    if (over || puz[i]) return;
+    el(i).value = n || ""; paint();
+    for (let k = 0; k < 81; k++) if (!val(k)) { $("#sd-status").textContent = ""; return; }
+    if (sol.every((v, k) => v === val(k))) {
+      over = true; const ms = timer.stop(); record("sudoku", ms);
+      stage.querySelectorAll(".sq input").forEach(x => x.readOnly = true);
+      $("#sd-status").textContent = "";
+      verdict(stage, `Solved in ${fmt(ms)}`, `${DLABEL[P.diff]} grid, ${cfg.clues} givens. ${statLine("sudoku")}.`, "sudoku");
+    } else { $("#sd-status").className = "status bad"; $("#sd-status").textContent = "The grid is full, but something clashes."; }
+  }
+  stage.querySelectorAll(".sq input").forEach(inp => {
+    const i = +inp.parentElement.dataset.i;
+    inp.addEventListener("focus", () => { cur = i; inp.select(); paint(); });
+    inp.addEventListener("input", () => { const n = +(inp.value.replace(/[^1-9]/g, "").slice(-1)) || 0; set(i, n); });
+    inp.addEventListener("keydown", e => {
+      const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -9, ArrowDown: 9 }[e.key];
+      if (mv != null) { e.preventDefault(); const j = i + mv; if (j >= 0 && j < 81 && !(Math.abs(mv) === 1 && Math.floor(j / 9) !== Math.floor(i / 9))) el(j).focus(); }
+      else if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); set(i, 0); }
+    });
+  });
+  stage.querySelectorAll(".pad button").forEach(b => b.addEventListener("mousedown", e => e.preventDefault()));
+  stage.querySelectorAll(".pad button").forEach(b => b.addEventListener("click", () => { if (cur != null) { set(cur, +b.dataset.n); el(cur).focus(); } }));
+  el(puz.indexOf(0)).focus();
+  return () => timer.stop();
+}
+
+const MAKERS = { crossword, scramble, memory, sudoku };
+hub();
+</script>
