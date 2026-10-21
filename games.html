@@ -140,94 +140,456 @@ table.tally { width: 100%; border-collapse: collapse; font-size: .9rem }
 .pad { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: min(100%, 460px); margin-top: 12px }
 .pad button { font: 700 1.1rem var(--f-mono); padding: 9px 0 }
 
+/* Content desk */
+select { background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px; max-width: 100% }
+select:disabled { opacity: .5 }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+.bankline { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; font-size: .88rem; color: var(--muted); margin-bottom: 18px; padding: 10px 12px; border: 1px dashed var(--rule); border-radius: 8px }
+.bankline b { color: var(--ink); font-variant-numeric: tabular-nums }
+.check { display: flex; align-items: center; gap: 6px }
+button.quiet { border: 0; background: transparent; color: var(--muted); padding: 4px 0; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; font-size: .85rem }
+button.quiet:hover { color: var(--ink) }
+.slot { margin-top: 8px; min-height: 1.6em }
+.report { display: flex; flex-wrap: wrap; gap: 8px; justify-content: inherit }
+.report input { flex: 1 1 200px; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); color: var(--ink) }
+.desk { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px }
+.terms { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-block: 10px 22px }
+.term { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.term .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
+.term ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px }
+.term .row { margin-top: auto }
+.mono { font-family: var(--f-mono) }
+.packhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px }
+
 @media (prefers-reduced-motion: reduce) { .shake { animation: none } .card { transition: none } }
 </style>
 
 <div class="wrap" id="app"></div>
 
 <script>
-// ---------- Word banks ----------
-const BANK = {
-  general: [
-    ["OCEAN","Vast body of salt water"],["PLANET","Body that orbits a star"],["VOLCANO","Mountain that can erupt"],
-    ["GALAXY","System of billions of stars"],["PIANO","Instrument with 88 keys"],["HARBOR","Sheltered water where ships dock"],
-    ["LANTERN","Portable light in a protective case"],["COMPASS","Its needle points north"],["GLACIER","Slow-moving river of ice"],
-    ["DESERT","Dry region with little rain"],["ECLIPSE","When one body hides another in the sky"],["PYRAMID","Egyptian tomb with triangular faces"],
-    ["ALPHABET","The letters, in order"],["MARATHON","Footrace of about 42 kilometres"],["BUTTERFLY","Insect that was once a caterpillar"],
-    ["THUNDER","Sound that follows lightning"],["ISLAND","Land surrounded by water"],["CANDLE","Wax light with a wick"],
-    ["MIRROR","Glass that reflects"],["LIBRARY","Place to borrow books"],["TELESCOPE","Instrument for viewing distant objects"],
-    ["ORCHESTRA","Large ensemble of musicians"],["RAINBOW","Arc of colours after rain"],["KANGAROO","Hopping marsupial of Australia"],
-    ["MAGNET","It attracts iron"],["CACTUS","Spiny desert plant"],["PENGUIN","Flightless bird of the southern seas"],
-    ["CASTLE","Fortified home of a lord"],["RIDDLE","Puzzling question"],["JUNGLE","Dense tropical forest"],
-    ["HORIZON","Line where sky meets earth"],["OXYGEN","Gas we breathe; symbol O"],["DIAMOND","Hardest natural gem"],
-    ["SATURN","The ringed planet"],["ANCHOR","Holds a ship in place"],["VIOLIN","Four-stringed instrument played with a bow"],
-    ["TORNADO","Violent rotating column of air"],["MANGO","Sweet fruit Guimaras is famous for"],["JEEPNEY","Iconic Philippine public vehicle"],
-    ["ADOBO","Dish braised in vinegar and soy sauce"],["BAMBOO","Tall grass used in building"],["TYPHOON","Tropical cyclone of the Western Pacific"],
-    ["SUNFLOWER","Tall yellow bloom that follows the sun"],["CHESS","Game of checks and checkmates"],["WHISPER","Speak very softly"],
-    ["PUZZLE","Something to solve"],["BRIDGE","Structure spanning a river"],["HONEY","Sweet food made by bees"],
-    ["EMBER","Glowing piece of a dying fire"],["QUILL","Feather pen"]
-  ],
-  bar: [
-    ["ESTOPPEL","Bars a party from denying a representation another relied upon (Art. 1431)"],
-    ["LACHES","Unreasonable delay in asserting a right, raising a presumption it was abandoned"],
-    ["DOLO","Felony by deliberate intent (Art. 3, RPC)"],["CULPA","Felony by imprudence, negligence or lack of skill"],
-    ["USUFRUCT","Right to enjoy another's property while preserving its form and substance (Art. 562)"],
-    ["EASEMENT","Encumbrance on an immovable for the benefit of another immovable or person (Art. 613)"],
-    ["NOVATION","Extinguishes an obligation by changing or substituting it (Art. 1291)"],
-    ["COMPENSATION","Extinguishes debts when two persons are creditors and debtors of each other (Art. 1278)"],
-    ["CONDONATION","Gratuitous renunciation of a debt by the creditor (Art. 1270)"],
-    ["ANTICHRESIS","Creditor takes the fruits of the debtor's immovable, applied to interest then principal (Art. 2132)"],
-    ["PLEDGE","Security over a movable delivered to the creditor"],
-    ["MORTGAGE","Accessory contract securing an obligation with immovable property, without transfer of possession"],
-    ["DATION","Alienation of property to the creditor in satisfaction of a money debt (Art. 1245)"],
-    ["LEGITIME","Part of the estate reserved by law for compulsory heirs (Art. 886)"],
-    ["CODICIL","Supplement or addition to a will (Art. 825)"],
-    ["PRETERITION","Total omission of a compulsory heir in the direct line (Art. 854)"],
-    ["COLLATION","Bringing donations back into the estate to compute the legitime"],
-    ["ESCHEAT","Reversion of property to the State when no heir survives (Rule 91)"],
-    ["AMPARO","Writ protecting the rights to life, liberty and security"],
-    ["CERTIORARI","Rule 65 remedy against grave abuse of discretion amounting to lack or excess of jurisdiction"],
-    ["MANDAMUS","Writ compelling performance of a ministerial duty"],
-    ["PROHIBITION","Writ commanding a tribunal to desist from further proceedings"],
-    ["INTERPLEADER","Action compelling conflicting claimants to litigate among themselves (Rule 62)"],
-    ["REPLEVIN","Provisional remedy to recover possession of personal property (Rule 60)"],
-    ["ATTACHMENT","Provisional remedy seizing property as security for a judgment (Rule 57)"],
-    ["INJUNCTION","Order to perform, or refrain from, a particular act (Rule 58)"],
-    ["DEMURRER","Motion to dismiss after the plaintiff rests, for insufficiency of evidence (Rule 33)"],
-    ["SUBPOENA","Process directing a person to testify or to produce documents"],
-    ["HEARSAY","Out-of-court statement offered to prove the truth of what it asserts"],
-    ["VENUE","Place where an action is tried"],
-    ["RECIDIVIST","Offender previously convicted by final judgment of a crime under the same RPC title"],
-    ["ALIBI","Weak defence that needs physical impossibility of presence at the scene"],
-    ["TREACHERY","Alevosia: means that insure execution without risk from the victim's defence"],
-    ["CONSPIRACY","Two or more persons agree on a felony and decide to commit it (Art. 8, RPC)"],
-    ["ENTRAPMENT","Lawful means to catch one already bent on crime, unlike instigation"],
-    ["PARRICIDE","Killing of one's parent, child, legitimate ascendant or descendant, or spouse (Art. 246, RPC)"],
-    ["ULTRAVIRES","Corporate act beyond the powers granted by law or the articles (2 words)"],
-    ["QUORUM","Majority needed to transact business at a meeting"],
-    ["PROXY","Written authority to vote another's shares"],
-    ["DIVIDEND","Distribution of unrestricted retained earnings to stockholders"],
-    ["RESJUDICATA","A matter finally adjudged, barring relitigation (2 words)"],
-    ["STAREDECISIS","Adhere to precedent and do not unsettle settled things (2 words)"],
-    ["OBITER","Remark in a decision not necessary to the ruling"],
-    ["LITISPENDENTIA","Another action pending between the same parties on the same cause (2 words)"],
-    ["MITTIMUS","Commitment order directing a jail to receive a prisoner"],
-    ["FORUMSHOPPING","Filing several suits on one cause in hope of a favourable ruling (2 words)"],
-    ["HABEASDATA","Writ protecting the right to privacy in information (2 words)"],
-    ["QUASIDELICT","Fault or negligence causing damage, with no pre-existing contract (Art. 2176; hyphenated)"],
-    ["DEPOSITION","Out-of-court testimony under oath, taken for use in a case"],
-    ["PROBATION","Release of a convict under supervision instead of serving sentence (PD 968)"]
-  ]
+// ---------- Term bank ----------
+// One line per term: ANSWER | governing provision | display name | clue | alternate clue.
+// A provision is given only where it is settled. When a provision belongs to one term alone,
+// the page also uses it as a third clue ("Governed by …").
+const SUBJECTS = { political: "Political Law", labor: "Labor Law", civil: "Civil Law", tax: "Taxation",
+  mercantile: "Mercantile Law", criminal: "Criminal Law", remedial: "Remedial Law", ethics: "Legal Ethics" };
+const RAW = {
+political: `
+SOVEREIGNTY|Art. II, Sec. 1||Supreme power that, under the Constitution, resides in the people|Its legal form is supreme and uncontrollable power inherent in a State
+REGALIAN|Art. XII, Sec. 2|Regalian doctrine|Doctrine that all lands of the public domain belong to the State|The ___ doctrine: lands not clearly private are presumed public
+IMPEACHMENT|Art. XI, Sec. 3||The House initiates it exclusively; the Senate tries it|Not more than once within one year against the same official
+REFERENDUM|||Power of the electorate to approve or reject legislation (RA 6735)
+INITIATIVE|||Power of the people to propose constitutional amendments or enact laws directly (RA 6735)
+PLEBISCITE|||Vote that ratifies constitutional amendments or changes to LGU boundaries
+RECALL|LGC, Sec. 69||Ends an elective local official's term for loss of confidence|May not be held within one year of assumption or of the next regular election
+POLICEPOWER||Police power|Power to regulate liberty and property to promote the general welfare|The most pervasive of the inherent powers of the State (2 words)
+EMINENTDOMAIN|Art. III, Sec. 9|Eminent domain|Power to take private property for public use upon just compensation (2 words)|Inherent power whose limits are public use and just compensation (2 words)
+DUEPROCESS|Art. III, Sec. 1|Due process|No person shall be deprived of life, liberty or property without it (2 words)|Has procedural and substantive aspects (2 words)
+MIRANDA|Art. III, Sec. 12|Miranda rights|___ rights: to remain silent and to counsel during custodial investigation|Rights named after a 1966 US case on custodial interrogation
+ATTAINDER||Bill of attainder|Bill of ___: legislative act inflicting punishment without judicial trial
+EXPOSTFACTO||Ex post facto law|Law that punishes an act innocent when done (3 words)|Prohibited retroactive penal law (3 words)
+HABEASCORPUS|Art. VII, Sec. 18|Habeas corpus|Its privilege may be suspended only for invasion or rebellion (2 words)|Writ that tests the legality of detention (2 words)
+PARDON|Art. VII, Sec. 19||Clemency that needs conviction by final judgment|Executive clemency that may be absolute or conditional
+AMNESTY|||Clemency for political offenses that needs the concurrence of a majority of all Members of Congress|Looks backward and abolishes the offense itself
+REPRIEVE|||Postponement of the execution of a sentence
+COMMUTATION|||Reduction of a sentence to a lighter one
+VETO|||President's disapproval of a bill, overridable by two-thirds of each House|An item ___ strikes particular items in appropriation, revenue or tariff bills
+RIDER|Art. VI, Sec. 26||Provision unrelated to a bill's subject, barred by the one-subject rule|Inappropriate provision in a general appropriations bill
+GERRYMANDERING|||Drawing district lines to favor a party or candidate
+APPORTIONMENT|||Allocation of legislative seats among districts by population
+NATURALIZATION|||Process by which an alien acquires Philippine citizenship
+REPATRIATION|||Reacquisition of lost Philippine citizenship
+JUSSOLI||Jus soli|Citizenship by place of birth (2 words)
+JUSSANGUINIS||Jus sanguinis|Citizenship by blood, the Philippine rule (2 words)
+OMBUDSMAN|Art. XI, Sec. 12||Called "protector of the people"; acts promptly on complaints against public officials
+SANDIGANBAYAN|Art. XI, Sec. 4||The anti-graft court
+COMELEC|Art. IX-C||Constitutional commission that enforces and administers election laws
+COA|Art. IX-D||Constitutional commission that audits government accounts
+DELEGATION|||Potestas delegata non potest delegari bars further ___ of delegated power|Allowed with a complete law and a sufficient standard
+RECOGNITION|||Act by which a State acknowledges another entity as a State or government
+TREATY|Art. VII, Sec. 21||Valid only with the concurrence of at least two-thirds of all the Senators
+JUSCOGENS||Jus cogens|Peremptory norm of international law that allows no derogation (2 words)
+EXTRADITION|||Surrender of an accused or convict by one State to another under a treaty
+ASYLUM|||Protection a State grants to a foreigner fleeing persecution
+STANDING|||Locus standi: a personal and substantial interest in the case|Requirement relaxed for issues of transcendental importance
+MOOT|||A case that no longer presents a justiciable controversy because of supervening events
+AUTONOMY|Art. X||Decentralization granted to local governments
+ORDINANCE|||Legislative measure of a sanggunian
+FRANCHISE|Art. XII, Sec. 11||For a public utility, granted for not longer than fifty years
+PRIORRESTRAINT||Prior restraint|Government restriction on speech before publication (2 words)
+OVERBREADTH|||Doctrine voiding a law that sweeps protected speech within its reach
+`,
+civil: `
+ESTOPPEL|Art. 1431, NCC||Renders an admission conclusive against the one who made it, as against one who relied on it|Bars a party from denying a representation another relied upon
+LACHES|||Unreasonable delay in asserting a right, raising a presumption it was abandoned|An equitable defence, unlike prescription, which is statutory
+USUFRUCT|Art. 562, NCC||Right to enjoy another's property while preserving its form and substance
+EASEMENT|Art. 613, NCC||Encumbrance on an immovable for the benefit of another immovable or person|A servitude, continuous or discontinuous, apparent or non-apparent
+NOVATION|Art. 1291, NCC||Extinguishes an obligation by changing its object, substituting the debtor, or subrogating a creditor|Never presumed; it must be clearly established
+COMPENSATION|Art. 1278, NCC||Extinguishes debts when two persons are creditors and debtors of each other|Set-off that takes effect by operation of law when the requisites concur
+CONDONATION|Art. 1270, NCC||Gratuitous renunciation of a debt by the creditor
+ANTICHRESIS|Art. 2132, NCC||Creditor takes the fruits of the debtor's immovable, applied to interest then principal|Must be in writing to be valid
+PLEDGE|||Security over a movable delivered to the creditor
+MORTGAGE|||Accessory contract securing an obligation with immovable property, without transfer of possession
+DATION|Art. 1245, NCC|Dation in payment|Alienation of property to the creditor in satisfaction of a money debt|Dacion en pago
+LEGITIME|Art. 886, NCC||Part of the estate the testator cannot dispose of, reserved for compulsory heirs
+CODICIL|Art. 825, NCC||Supplement or addition to a will
+PRETERITION|Art. 854, NCC||Total omission of a compulsory heir in the direct line|Annuls the institution of heirs, but devises and legacies stand if not inofficious
+COLLATION|||Bringing donations back into the estate to compute the legitime
+QUASIDELICT|Art. 2176, NCC|Quasi-delict|Fault or negligence causing damage, with no pre-existing contract (hyphenated)|Culpa aquiliana
+ACCESSION|Art. 440, NCC||Ownership's right to everything the property produces or that is incorporated into it
+POSSESSION|Art. 523, NCC||Holding of a thing or enjoyment of a right
+PRESCRIPTION|Art. 1106, NCC||Acquisition of ownership, or loss of rights, through lapse of time
+DONATION|Art. 725, NCC||Act of liberality disposing gratuitously of a thing in favour of one who accepts it
+HOLOGRAPHIC|Art. 810, NCC|Holographic will|Will entirely written, dated and signed by the testator's own hand
+REPRESENTATION|Art. 970, NCC||Right by which the law raises a relative into the place and degree of the person represented
+ACCRETION|Art. 1015, NCC||Increase of co-heirs' shares when one cannot or will not inherit
+ALLUVION|Art. 457, NCC||Gradual deposits from a river's current, belonging to the riparian owner
+RESCISSION|Art. 1381, NCC||Remedy against a valid contract causing lesion or defrauding creditors|Subsidiary remedy available only when no other legal means exists
+ANNULMENT|Art. 1390, NCC||Remedy against a voidable contract, for example one with vitiated consent
+REFORMATION|Art. 1359, NCC||Remedy when the instrument fails to express the parties' true agreement
+AGENCY|Art. 1868, NCC||Contract to render a service or do an act on behalf of another, with that person's consent
+PARTNERSHIP|Art. 1767, NCC||Contract to contribute money, property or industry to a common fund, to divide the profits
+COMMODATUM|Art. 1933, NCC||Loan of a non-consumable for use, to be returned; essentially gratuitous
+MUTUUM|Art. 1953, NCC||Loan of money or a fungible, the borrower returning the same kind and quality
+DEPOSIT|Art. 1962, NCC||Contract to keep another's thing safely and return it
+GUARANTY|Art. 2047, NCC||Binds a person to fulfil the debtor's obligation if the debtor fails to
+EXCUSSION|Art. 2058, NCC||Benefit requiring the creditor first to exhaust the debtor's property
+FORTUITOUS|Art. 1174, NCC|Fortuitous event|___ event: unforeseeable or inevitable, generally excusing liability|Caso fortuito
+SOLIDARY|Art. 1207, NCC||Obligation in which each debtor may be compelled to pay the whole|Exists only when the obligation, the law or the nature of the obligation so provides
+FILIATION|FC, Art. 172||Legal tie between parent and child, proved by the record of birth or an admission
+LEGITIMATION|FC, Art. 177||Makes legitimate a child of parents who had no impediment, upon their later marriage
+NULLITY|FC, Art. 36||Declared for a void marriage, as for psychological incapacity
+DOMICILE|Art. 50, NCC||Place of habitual residence of natural persons
+AFFINITY|||Relationship by marriage
+CONSANGUINITY|||Relationship by blood
+NUISANCE|Art. 694, NCC||Act or condition that injures health, annoys the senses or obstructs free passage
+CONJUGAL|||___ partnership of gains: the default property regime before the Family Code
+`,
+labor: `
+REGULAR|Art. 295, LC||Employment in activities usually necessary or desirable in the employer's business
+PROBATIONARY|Art. 296, LC||Employment, generally not over six months, testing fitness against standards made known at engagement
+PROJECT|||Employment for a specific undertaking whose completion is fixed at engagement
+SEASONAL|||Work performed only during a particular season
+REDUNDANCY|||Authorized cause where positions exceed what the business actually needs|Requires one month's pay per year of service as separation pay
+RETRENCHMENT|||Cutting staff to prevent business losses|Requires half a month's pay per year of service as separation pay
+MISCONDUCT|Art. 297, LC||Serious ___: a just cause for dismissal
+BACKWAGES|||Earnings lost by an illegally dismissed employee, counted to actual reinstatement
+REINSTATEMENT|||Restoration of an illegally dismissed employee to the former position|Immediately executory, even pending appeal
+CONSTRUCTIVE|||___ dismissal: quitting because continued work became impossible, unreasonable or unlikely
+ABANDONMENT|||Needs failure to report for work and a clear intent to sever the relationship
+STRIKE|Art. 219, LC||Temporary stoppage of work by concerted action of employees over a labor dispute
+LOCKOUT|||Temporary refusal of an employer to furnish work over a labor dispute
+PICKETING|||Peaceful marching and patrolling to publicize a labor dispute
+CERTIFICATION|||___ election: decides the sole and exclusive bargaining agent
+CLOSEDSHOP||Closed shop|Union security clause requiring membership before hiring (2 words)
+CONTRACTING|||Labor-only ___: prohibited when the contractor lacks substantial capital and workers do core work
+OVERTIME|Art. 87, LC||Work beyond eight hours, paid at least 25% more on ordinary days
+NIGHTSHIFT|Art. 86, LC|Night shift differential|___ differential: at least 10% for work between 10 p.m. and 6 a.m. (2 words)
+RETIREMENT|Art. 302, LC||Optional at 60 and compulsory at 65 absent a plan
+LABOR|Art. 4, LC||Doubts in implementing the Code are resolved in favour of ___
+MANAGEMENT|||___ prerogative: the employer's right to regulate all aspects of employment
+FOURFOLD|||___ test: selection, wages, power of dismissal, and control
+CONTROL|||The most important element of the employer-employee relationship test
+KASAMBAHAY|||Domestic worker under RA 10361
+NLRC|||Commission with appellate jurisdiction over Labor Arbiter decisions
+ARBITER|Art. 224, LC|Labor Arbiter|Labor ___: original jurisdiction over illegal dismissal cases
+SENA|||Single-entry approach: mandatory 30-day conciliation and mediation (RA 10396)
+QUITCLAIM|||Employee waiver viewed with disfavour unless voluntary and for reasonable consideration
+SEPARATION|||___ pay: due on authorized-cause termination, or in lieu of reinstatement
+WAGE|||Remuneration for work done; a floor is set by regional boards
+UNION|||Labor organization that may become the exclusive bargaining agent
+DIMINUTION|||Non-___ of benefits: benefits long and deliberately given cannot be withdrawn
+`,
+tax: `
+TAXATION|||Inherent power to enforce proportional contributions to support government
+LIFEBLOOD|||Taxes are the ___ of the government
+UNIFORMITY|Art. VI, Sec. 28||Rule that taxation shall be uniform and equitable
+SITUS|||Place of taxation
+AVOIDANCE|||Tax ___: lawful means of reducing taxes
+EVASION|||Tax ___: unlawful means of escaping taxes
+EXEMPTION|||Immunity from tax, construed strictly against the taxpayer
+ESTATE|Sec. 84, NIRC||___ tax: 6% of what a decedent leaves, net of deductions
+DONORS|Sec. 99, NIRC|Donor's tax|___ tax: 6% of gifts above P250,000 a year
+VAT|||Indirect tax of 12% on the sale of goods and services
+WITHHOLDING|||Collection of tax at source by the payor
+ASSESSMENT|Sec. 203, NIRC||Generally made within three years after the last day for filing the return
+PROTEST|Sec. 228, NIRC||Taxpayer's challenge filed within 30 days from receipt of the final assessment
+REFUND|Sec. 229, NIRC||Claim for erroneously paid tax, within two years from payment
+COMPROMISE|Sec. 204, NIRC||Settlement of tax liability for doubtful validity or financial incapacity
+DISTRAINT|||Summary remedy seizing personal property of a delinquent taxpayer
+LEVY|||Summary remedy against real property of a delinquent taxpayer
+CTA|||Court with exclusive appellate jurisdiction over tax disputes (RA 1125)
+DOUBLE|||___ taxation: same subject, same authority, same period, same purpose
+PERCENTAGE|||Business tax on gross sales or receipts of non-VAT persons
+EXCISE|||Tax on goods such as alcohol, tobacco and fuel for domestic sale
+DOCUMENTARY|||___ stamp tax: on documents, instruments and loan agreements
+FRINGE|Sec. 33, NIRC|Fringe benefit tax|___ benefit tax: on benefits given to managerial and supervisory employees
+TARIFF|||Duties on imported goods
+ZERORATED||Zero-rated|VAT at 0%, as on export sales (hyphenated)
+PASSIVE|||___ income: interest, dividends and royalties, often subject to final tax
+MARSHALL|||Chief Justice who wrote "the power to tax involves the power to destroy"
+HOLMES|||Justice who wrote "the power to tax is not the power to destroy while this Court sits"
+BENEFITS|||___-protection theory: the basis of taxation
+POLLTAX|Art. III, Sec. 20|Poll tax|No one may be imprisoned for non-payment of one (2 words)
+`,
+mercantile: `
+QUORUM|||Majority needed to transact business at a meeting
+PROXY|||Written authority to vote another's shares
+DIVIDEND|||Distribution of unrestricted retained earnings to stockholders
+ULTRAVIRES||Ultra vires|Corporate act beyond the powers granted by law or the articles (2 words)
+INCORPORATOR|RCC, Sec. 10||Person who originally forms and composes the corporation
+PIERCING|||___ the corporate veil: disregarding separate personality to prevent fraud
+APPRAISAL|RCC, Sec. 80||Right of a dissenting stockholder to be paid the fair value of shares
+PREEMPTIVE|RCC, Sec. 38|Pre-emptive right|Stockholder's right to subscribe to new issues in proportion to holdings
+DERIVATIVE|||Suit by a stockholder on behalf of the corporation
+TRUSTFUND||Trust fund doctrine|___ doctrine: subscriptions form a fund for corporate creditors (2 words)
+BYLAWS|||Rules adopted for the internal government of a corporation
+MERGER|||Combination where one corporation absorbs the others
+CONSOLIDATION|||Union of corporations into a single new corporation
+WATERED|||___ stock: issued for less than par or for overvalued property
+NEGOTIABLE|NIL, Sec. 1||___ instrument: written, signed, unconditional, payable in money, to order or bearer
+HOLDER|NIL, Sec. 52|Holder in due course|___ in due course: took the instrument complete, for value, in good faith
+INDORSEMENT|||Writing the transferor's name on the instrument
+ACCOMMODATION|NIL, Sec. 29||___ party: signs without receiving value, to lend his name
+DISHONOR|||Refusal of acceptance or of payment
+INSURABLE|||___ interest: required for a valid insurance contract
+CONCEALMENT|Ins. Code, Sec. 26||Neglect to communicate what a party knows and ought to communicate
+SUBROGATION|Art. 2207, NCC||Insurer's right, after paying, to step into the insured's place
+PREMIUM|||Consideration paid for insurance
+REINSURANCE|||Insurer insures itself against liability under its own policies
+COMMONCARRIER|Art. 1732, NCC|Common carrier|Transports goods or passengers for pay, offering services to the public (2 words)
+EXTRAORDINARY|Art. 1733, NCC||___ diligence: required of common carriers
+BILLOFLADING||Bill of lading|Receipt and contract for the carriage of goods (3 words)
+TRUSTRECEIPT|PD 115|Trust receipt|Security where a bank releases goods to a borrower who holds them in trust (2 words)
+SECRECY|RA 1405|Bank secrecy|Bank deposits are absolutely confidential under RA 1405, with exceptions
+LAUNDERING|RA 9160|Money laundering|Money ___: making proceeds of unlawful activity appear legitimate
+PATENT|||Grant for an invention that is new, inventive and industrially applicable (RA 8293)
+TRADEMARK|||Visible sign distinguishing the goods of an enterprise
+COPYRIGHT|||Protection of literary and artistic works from the moment of creation
+REHABILITATION|RA 10142||Restoring a distressed debtor to successful operation
+INSOLVENCY|||Inability to pay debts as they fall due
+CRAMDOWN|||Court approval of a rehabilitation plan over creditors' objections
+SECURITIES|RA 8799||Shares, notes and investment contracts regulated by the SEC
+HOWEY|||Test defining an investment contract, from a 1946 US Supreme Court case
+INSIDER|||___ trading: dealing on material non-public information
+TENDER|||___ offer: public offer to acquire equity shares of a public company
+`,
+criminal: `
+DOLO|Art. 3, RPC||Felony by deliberate intent|Malice, as distinguished from culpa
+CULPA|||Felony by imprudence, negligence, lack of foresight or lack of skill
+RECIDIVIST|Art. 14(9), RPC||Offender previously convicted by final judgment of a crime under the same RPC title
+REITERACION|Art. 14(10), RPC|Reiteracion|Offender previously punished for an offense with an equal or greater penalty, or two lighter ones
+HABITUAL|Art. 62, RPC|Habitual delinquency|___ delinquent: third conviction within ten years for specified crimes
+ALIBI|||Weak defence that needs physical impossibility of presence at the scene
+TREACHERY|Art. 14(16), RPC||Alevosia: means that insure execution without risk from the victim's defence
+PREMEDITATION|||Evident ___: aggravating circumstance requiring time to reflect
+IGNOMINY|Art. 14(17), RPC||Aggravating circumstance that adds disgrace to the material injury
+NIGHTTIME|Art. 14(6), RPC||Aggravating when purposely sought to facilitate the crime
+CONSPIRACY|Art. 8, RPC||Two or more persons agree on a felony and decide to commit it
+ENTRAPMENT|||Lawful means to catch one already bent on crime
+INSTIGATION|||Inducing someone to commit a crime he would not otherwise commit; an absolving cause
+SELFDEFENSE|Art. 11(1), RPC|Self-defense|Needs unlawful aggression, reasonable necessity and lack of provocation (hyphenated)
+AGGRESSION|||Unlawful ___: the indispensable element of self-defence
+INSANITY|Art. 12(1), RPC||Exempting circumstance; complete deprivation of intelligence
+PASSION|Art. 13(6), RPC||___ and obfuscation: a mitigating circumstance
+SURRENDER|Art. 13(7), RPC|Voluntary surrender|Voluntary ___: mitigating when spontaneous, to a person in authority
+FRUSTRATED|||Stage where all acts of execution are done but the felony is not produced
+ATTEMPTED|||Stage where overt acts begin but not all acts of execution are performed
+ABERRATIOICTUS||Aberratio ictus|Mistake in the blow (2 words)
+PROXIMATE|||___ cause: produces the injury in a natural and continuous sequence
+ESTAFA|Art. 315, RPC||Swindling by abuse of confidence or deceit
+THEFT|Art. 308, RPC||Taking another's personal property with intent to gain, without violence or intimidation
+ROBBERY|Art. 293, RPC||Taking personal property with violence or intimidation, or force upon things
+MURDER|Art. 248, RPC||Killing qualified by circumstances such as treachery or evident premeditation
+HOMICIDE|Art. 249, RPC||Killing without any qualifying circumstance
+PARRICIDE|Art. 246, RPC||Killing of one's parent, child, legitimate ascendant or descendant, or spouse
+INFANTICIDE|Art. 255, RPC||Killing of a child less than three days old
+BIGAMY|Art. 349, RPC||Contracting a second marriage before the first is legally dissolved
+REBELLION|Art. 134, RPC||Rising publicly and taking arms against the Government
+SEDITION|Art. 139, RPC||Rising publicly and tumultuously to attain ends by force, outside legal methods
+MALVERSATION|Art. 217, RPC||Misappropriation of public funds by an accountable officer
+BRIBERY|Art. 210, RPC|Direct bribery|Public officer receiving gifts in consideration of an official act
+PLUNDER|RA 7080||Amassing ill-gotten wealth of at least P50 million
+COMPLEX|Art. 48, RPC|Complex crime|___ crime: a single act constituting two or more felonies
+INDETERMINATE|Act 4103|Indeterminate Sentence Law|___ Sentence Law: sets a minimum and a maximum term
+RECLUSION|Art. 27, RPC|Reclusion perpetua|___ perpetua: 20 years and 1 day to 40 years
+FENCING|PD 1612||Buying or keeping goods known to be stolen
+PROBATION|PD 968||Release of a convict under supervision instead of serving sentence
+`,
+remedial: `
+CERTIORARI|Rule 65||Remedy against grave abuse of discretion amounting to lack or excess of jurisdiction|Corrects errors of jurisdiction, not errors of judgment
+MANDAMUS|||Writ compelling performance of a ministerial duty
+PROHIBITION|||Writ commanding a tribunal to desist from further proceedings
+INTERPLEADER|Rule 62||Action compelling conflicting claimants to litigate among themselves
+REPLEVIN|Rule 60||Provisional remedy to recover possession of personal property
+ATTACHMENT|Rule 57|Preliminary attachment|Provisional remedy seizing property as security for a judgment
+INJUNCTION|Rule 58|Preliminary injunction|Order to perform, or refrain from, a particular act
+DEMURRER|Rule 33|Demurrer to evidence|Motion to dismiss after the plaintiff rests, for insufficiency of evidence
+SUBPOENA|||Process directing a person to testify or to produce documents
+HEARSAY|||Out-of-court statement offered to prove the truth of what it asserts
+VENUE|||Place where an action is tried; waivable, unlike jurisdiction
+ESCHEAT|Rule 91||Reversion of property to the State when no heir survives
+AMPARO|||Writ protecting the rights to life, liberty and security
+HABEASDATA||Habeas data|Writ protecting the right to privacy in information (2 words)
+RESJUDICATA||Res judicata|A matter finally adjudged, barring relitigation (2 words)
+STAREDECISIS||Stare decisis|Adhere to precedent and do not unsettle settled things (2 words)
+OBITER||Obiter dictum|Remark in a decision not necessary to the ruling
+LITISPENDENTIA||Litis pendentia|Another action pending between the same parties on the same cause (2 words)
+MITTIMUS|||Commitment order directing a jail to receive a prisoner
+FORUMSHOPPING||Forum shopping|Filing several suits on one cause in hope of a favourable ruling (2 words)
+DEPOSITION|||Out-of-court testimony under oath, taken for use in a case
+JURISDICTION|||Power to hear and decide a case, conferred only by law
+SUMMONS|Rule 14||Writ by which the court acquires jurisdiction over the defendant's person
+COUNTERCLAIM|||Claim a defending party has against the opposing party
+CROSSCLAIM|||Claim by one party against a co-party
+DEFAULT|Rule 9||Status of a defendant who fails to answer within the time allowed
+PRETRIAL|Rule 18|Pre-trial|Mandatory conference to simplify issues and consider settlement (hyphenated)
+EXECUTION|Rule 39||Remedy that enforces a final and executory judgment
+APPEAL|||A statutory privilege, not a natural right
+RECEIVER|Rule 59|Receivership|Person appointed to preserve property in litigation
+QUOWARRANTO|Rule 66|Quo warranto|Action against usurpation of a public office or franchise (2 words)
+EXPROPRIATION|Rule 67||Special civil action for eminent domain
+FORECLOSURE|Rule 68|Judicial foreclosure|Judicial sale of mortgaged property
+PARTITION|Rule 69||Special civil action to divide co-owned property
+DETAINER|Rule 70|Unlawful detainer|Unlawful ___: possession withheld after the right to hold it expired
+CONTEMPT|Rule 71||Disobedience of, or disrespect to, the court
+BAIL|Rule 114||Security for the release of a person in custody
+ARRAIGNMENT|Rule 116||Reading of the charge to the accused, who then enters a plea
+INFORMATION|Rule 110||Accusation in writing subscribed by the prosecutor
+SEARCHWARRANT|Rule 126|Search warrant|Order to search for and seize personal property (2 words)
+PLAINVIEW||Plain view|Exception to the warrant requirement where evidence is openly seen (2 words)
+TERRY|||___ search: stop-and-frisk on a genuine reason to suspect
+ORIGINAL|||___ Document Rule: formerly the best evidence rule
+PAROL|||___ evidence rule: a written agreement contains all the agreed terms
+DYING|||___ declaration: statement made under consciousness of impending death
+CHAIN|RA 9165, Sec. 21|Chain of custody|___ of custody: required for seized dangerous drugs
+CORPUSDELICTI||Corpus delicti|Body of the crime: the fact that a crime was committed (2 words)
+FRUIT|||___ of the poisonous tree: evidence derived from an illegal search
+`,
+ethics: `
+CPRA|||Code of Professional Responsibility and Accountability (2023)
+INDEPENDENCE|||First of the CPRA's core values
+PROPRIETY|||CPRA canon on conduct befitting a lawyer, in and out of court
+FIDELITY|||CPRA canon of loyalty to the client's cause
+COMPETENCE|||Canon paired with diligence in the CPRA
+EQUALITY|||CPRA canon against discrimination
+ACCOUNTABILITY|||CPRA canon on answering for one's professional conduct
+CANDOR|||Duty of truthfulness to the court
+PRIVILEGE|||Attorney-client ___: protects confidential communications
+CONFLICT|||___ of interest: representing inconsistent interests
+CHAMPERTY|||Lawyer bearing litigation expenses in exchange for a share of the recovery
+BARRATRY|||Stirring up litigation
+CONTINGENT|||___ fee: payable only upon success
+QUANTUMMERUIT||Quantum meruit|As much as he deserves; basis of fees absent an agreement (2 words)
+RETAINING|||___ lien: right to keep client papers until fees are paid
+CHARGING|||___ lien: attaches to judgments obtained for the client
+DISBARMENT|||The most severe administrative penalty on a lawyer
+SUSPENSION|||Penalty barring practice for a period
+NOTARY|||Public officer who authenticates documents under the 2004 Notarial Rules
+JURAT|||Notarial act where the signatory swears to the truth of the document
+ACKNOWLEDGMENT|||Notarial act where the signatory declares the document his free act
+PROBONO||Pro bono|Legal service for free (2 words)
+MCLE|||Mandatory Continuing Legal Education
+IBP|||Integrated Bar of the Philippines
+OATH|||Lawyer's ___: taken before admission to the Bar
+RETAINER|||Agreement engaging a lawyer's services
+WITHDRAWAL|||A lawyer's exit from a case, with the client's consent or the court's leave
+SOLICITATION|||Improper ___ of legal business
+MALPRACTICE|||Professional negligence or misconduct by a lawyer
+DILIGENCE|||Duty to attend to a client's matter without neglect
+`
 };
-// Memory pairs for Bar mode: a term and the provision that governs it
-const CITES = [
-  ["Usufruct","Art. 562, NCC"],["Easement","Art. 613, NCC"],["Novation","Art. 1291, NCC"],["Compensation","Art. 1278, NCC"],
-  ["Condonation","Art. 1270, NCC"],["Antichresis","Art. 2132, NCC"],["Dation in payment","Art. 1245, NCC"],["Legitime","Art. 886, NCC"],
-  ["Codicil","Art. 825, NCC"],["Preterition","Art. 854, NCC"],["Quasi-delict","Art. 2176, NCC"],["Conspiracy","Art. 8, RPC"],
-  ["Parricide","Art. 246, RPC"],["Replevin","Rule 60"],["Preliminary attachment","Rule 57"],["Preliminary injunction","Rule 58"],
-  ["Interpleader","Rule 62"],["Certiorari","Rule 65"],["Habeas corpus","Rule 102"],["Escheat","Rule 91"],
-  ["Quo warranto","Rule 66"],["Expropriation","Rule 67"],["Receivership","Rule 59"],["Declaratory relief","Rule 63"]
-];
+const GENERAL_RAW = `
+OCEAN|Vast body of salt water
+PLANET|Body that orbits a star
+VOLCANO|Mountain that can erupt
+GALAXY|System of billions of stars
+PIANO|Instrument with 88 keys
+HARBOR|Sheltered water where ships dock
+LANTERN|Portable light in a protective case
+COMPASS|Its needle points north
+GLACIER|Slow-moving river of ice
+DESERT|Dry region with little rain
+ECLIPSE|When one body hides another in the sky
+PYRAMID|Egyptian tomb with triangular faces
+ALPHABET|The letters, in order
+MARATHON|Footrace of about 42 kilometres
+BUTTERFLY|Insect that was once a caterpillar
+THUNDER|Sound that follows lightning
+ISLAND|Land surrounded by water
+CANDLE|Wax light with a wick
+MIRROR|Glass that reflects
+LIBRARY|Place to borrow books
+TELESCOPE|Instrument for viewing distant objects
+ORCHESTRA|Large ensemble of musicians
+RAINBOW|Arc of colours after rain
+KANGAROO|Hopping marsupial of Australia
+MAGNET|It attracts iron
+CACTUS|Spiny desert plant
+PENGUIN|Flightless bird of the southern seas
+CASTLE|Fortified home of a lord
+RIDDLE|Puzzling question
+JUNGLE|Dense tropical forest
+HORIZON|Line where sky meets earth
+OXYGEN|Gas we breathe; symbol O
+DIAMOND|Hardest natural gem
+SATURN|The ringed planet
+ANCHOR|Holds a ship in place
+VIOLIN|Four-stringed instrument played with a bow
+TORNADO|Violent rotating column of air
+MANGO|Sweet fruit Guimaras is famous for
+JEEPNEY|Iconic Philippine public vehicle
+ADOBO|Dish braised in vinegar and soy sauce
+BAMBOO|Tall grass used in building
+TYPHOON|Tropical cyclone of the Western Pacific
+SUNFLOWER|Tall yellow bloom that follows the sun
+CHESS|Game of checks and checkmates
+WHISPER|Speak very softly
+PUZZLE|Something to solve
+BRIDGE|Structure spanning a river
+HONEY|Sweet food made by bees
+EMBER|Glowing piece of a dying fire
+QUILL|Feather pen
+TARSIER|Tiny big-eyed primate of Bohol
+MAYON|Volcano famed for its near-perfect cone
+BANAUE|Town known for its rice terraces
+CALAMANSI|Small Philippine citrus
+CARABAO|Water buffalo, the national work animal
+SAMPAGUITA|National flower of the Philippines
+NARRA|National tree of the Philippines
+HALOHALO|Iced dessert whose name means mix-mix
+BALIKBAYAN|___ box: sent home by Filipinos abroad
+BAYANIHAN|Spirit of communal help
+ARCHIPELAGO|Group of islands, such as the Philippines
+EQUATOR|Imaginary line dividing north and south
+MERIDIAN|Line of longitude
+GRAVITY|Force that keeps us on the ground
+PHOTON|Particle of light
+NEURON|Nerve cell
+GLOSSARY|List of terms with meanings
+METAPHOR|Figure of speech calling one thing another
+SONNET|Fourteen-line poem
+PALINDROME|Reads the same backward
+LABYRINTH|Maze, as of the Minotaur
+TELEGRAPH|Sent messages in Morse code
+LIGHTHOUSE|Tower that guides ships at night
+SAILBOAT|Vessel moved by wind
+AVALANCHE|Rush of snow down a slope
+MONSOON|Seasonal wind bringing heavy rain
+QUARTZ|Crystal used in watches
+SAFFRON|Costly spice from crocus flowers
+CINNAMON|Spice from tree bark
+ORIGAMI|Japanese art of paper folding
+`;
+const titleCase = a => a[0] + a.slice(1).toLowerCase();
+function parseTerms(s, block) {
+  return block.trim().split("\n").map(line => {
+    const [a, k, d, ...c] = line.split("|").map(x => x.trim());
+    return { a, s, k: k || "", d: d || titleCase(a), c: c.filter(Boolean), src: "bank" };
+  });
+}
+const BAR_BANK = Object.entries(RAW).flatMap(([s, block]) => parseTerms(s, block));
+const GENERAL = GENERAL_RAW.trim().split("\n").map(l => { const [a, c] = l.split("|"); return { a, s: "general", k: "", d: titleCase(a), c: [c], src: "bank" }; });
 const SYMBOLS = ["🍋","🌵","🐢","🎈","🧭","🌙","⚓","🎻","🦉","🍄","🪁","🐙","🌋","🔭","🧩","🥭","🐚","🪶"];
 
 // ---------- What each difficulty changes ----------
@@ -265,23 +627,25 @@ const GAMES = {
   memory: { name: "Memory Match", blurb: "Flip cards two at a time and find every pair.", themed: true, scoreBy: "time",
     rules: c => [`${c.pairs} pairs (${c.pairs * 2} cards)`, c.peek ? `All cards shown for ${c.peek / 1000} s at the start` : "No preview", "Bar mode pairs a term with its article or rule"] },
   sudoku: { name: "Sudoku", blurb: "Place 1 to 9 once in every row, column and box.", themed: false, scoreBy: "time",
-    rules: c => [`${c.clues} given numbers`, c.conflicts ? "Clashing numbers turn red" : "No clash warnings", "Same puzzle in either theme"] }
+    rules: c => [`${c.clues} given numbers`, c.conflicts ? "Clashing numbers turn red" : "No clash warnings", "Same puzzle in any theme or subject"] }
 };
 
 // ---------- Helpers ----------
 const $ = (s, el = document) => el.querySelector(s);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 function hash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function shuffle(arr, rng) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
-const PREF_KEY = "mdk:prefs", STAT_KEY = "mdk:stats";
+const PREF_KEY = "mdk:prefs", STAT_KEY = "mdk:stats", SEEN_KEY = "mdk:seen";
 function loadJSON(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } }
 function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
-const P = Object.assign({ diff: "easy", theme: "bar", mode: "daily" }, loadJSON(PREF_KEY, {}));
+const P = Object.assign({ diff: "easy", theme: "bar", mode: "daily", subject: "all", unreviewed: false }, loadJSON(PREF_KEY, {}));
+if (P.subject !== "all" && !SUBJECTS[P.subject]) P.subject = "all";
 const STATS = loadJSON(STAT_KEY, {});
+const SEEN = loadJSON(SEEN_KEY, {});
 const statKey = (g, d, t) => `${g}:${d}:${GAMES[g].themed ? t : "any"}`;
 // Only finished games count; an abandoned puzzle leaves no mark
 function record(g, value) {
@@ -296,9 +660,43 @@ function statLine(g) {
   return `${s.won} finished · best ${GAMES[g].scoreBy === "score" ? `${s.best} pts` : fmt(s.best)}`;
 }
 
+// ---------- Content: verified bank + reviewed packs from the shared store ----------
+let DB = null, SAMPLE = null, CAN_WRITE = null, CAN_EDIT = false, PACKS = [], FLAGS = [];
+const validTerm = t => t && /^[A-Z]{3,14}$/.test(t.a) && SUBJECTS[t.s] && Array.isArray(t.c) && t.c.some(x => typeof x === "string" && x.trim());
+function packTerms(statuses) {
+  return PACKS.flatMap(p => (Array.isArray(p.terms) ? p.terms : []).map((t, i) => ({ ...t, s: t.s || p.subject, src: "pack", pack: p.id, idx: i }))
+    .filter(t => statuses.includes(t.status) && validTerm(t))
+    .map(t => ({ ...t, k: String(t.k || ""), d: String(t.d || titleCase(t.a)), c: t.c.filter(x => typeof x === "string" && x.trim()).map(String) })));
+}
+function barPool() {
+  const seen = new Set(), out = [];
+  for (const t of [...BAR_BANK, ...packTerms(P.unreviewed ? ["approved", "pending"] : ["approved"])]) {
+    if (seen.has(t.a)) continue;
+    seen.add(t.a); out.push(t);
+  }
+  return out;
+}
+function pool() {
+  if (P.theme === "general") return GENERAL;
+  const all = barPool();
+  return P.subject === "all" ? all : all.filter(t => t.s === P.subject);
+}
+// Today's puzzle is the same draw for everyone; Fresh puzzles lead with the terms this browser has seen least recently
+function order(terms, rng) {
+  if (P.mode === "daily" && !FRESH) return shuffle(terms, rng);
+  return terms.map(t => [SEEN[t.a] || 0, rng(), t]).sort((x, y) => x[0] - y[0] || x[1] - y[1]).map(x => x[2]);
+}
+function markSeen(terms) { const now = Date.now(); terms.forEach(t => SEEN[t.a] = now); saveJSON(SEEN_KEY, SEEN); }
+function citeCounts(terms) { const m = {}; terms.forEach(t => { if (t.k) m[t.k] = (m[t.k] || 0) + 1; }); return m; }
+// Each term may carry several clues; a provision unique to one term becomes one more
+function clueFor(t, rng, counts) {
+  const list = t.c.concat(t.k && counts[t.k] === 1 ? [`Governed by ${t.k}`] : []);
+  return list[Math.floor(rng() * list.length)];
+}
+
 // ---------- Shell ----------
 const app = $("#app");
-let cleanup = null, current = null;
+let cleanup = null, current = null, FRESH = false;
 
 function seg(name, label, opts, value) {
   return `<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(([v, l, extra]) =>
@@ -313,23 +711,37 @@ function bindSegs(root, onChange) {
     saveJSON(PREF_KEY, P); onChange();
   }));
 }
+function leave() { if (cleanup) { cleanup(); cleanup = null; } }
 
 function hub() {
-  if (cleanup) { cleanup(); cleanup = null; }
+  leave();
   current = null;
+  const all = barPool(), counts = {};
+  all.forEach(t => counts[t.s] = (counts[t.s] || 0) + 1);
+  const added = packTerms(["approved"]).length, pending = packTerms(["pending"]).length;
   app.innerHTML = `
   <header class="mast">
     <div>
       <p class="label">Recess · Between sittings</p>
       <h1>Mind Docket</h1>
-      <p class="muted">Short puzzles to keep the mind sharp. Bar mode draws on doctrines, maxims and remedies.</p>
+      <p class="muted">Short puzzles to keep the mind sharp. Bar mode draws on doctrines, remedies and the provisions that govern them.</p>
     </div>
     <p class="seal">Mens sana in corpore sano</p>
   </header>
   <div class="controls">
     <div class="ctl"><span class="label">Difficulty</span>${diffSeg()}</div>
     <div class="ctl"><span class="label">Words from</span>${seg("theme-pick", "Words from", [["bar", "Bar review"], ["general", "General"]], P.theme)}</div>
+    <label class="ctl" for="subj"><span class="label">Subject</span>
+      <select id="subj" ${P.theme === "general" ? "disabled" : ""}>
+        <option value="all">All eight subjects (${all.length})</option>
+        ${Object.entries(SUBJECTS).map(([k, v]) => `<option value="${k}" ${P.subject === k ? "selected" : ""}>${esc(v)} (${counts[k] || 0})</option>`).join("")}
+      </select></label>
     <div class="ctl"><span class="label">Puzzle</span>${seg("mode", "Puzzle", [["daily", "Today's"], ["fresh", "Fresh"]], P.mode)}</div>
+  </div>
+  <div class="bankline">
+    <span><b>${BAR_BANK.length}</b> verified Bar terms${added ? ` · <b>${added}</b> added from reviewed packs` : ""}${pending ? ` · <b>${pending}</b> awaiting review` : ""}</span>
+    ${pending ? `<label class="check" for="unrev"><input type="checkbox" id="unrev" ${P.unreviewed ? "checked" : ""}> Include unreviewed terms</label>` : ""}
+    ${CAN_EDIT ? `<button id="to-review">Review content${pending + FLAGS.length ? ` (${pending + FLAGS.length})` : ""}</button>` : ""}
   </div>
   <div class="docket">${Object.entries(GAMES).map(([id, g], i) => `
     <article class="game">
@@ -339,29 +751,39 @@ function hub() {
       <div class="foot"><span class="pill idle">${esc(statLine(id))}</span><button class="primary" data-play="${id}">Play ${DLABEL[P.diff].toLowerCase()}</button></div>
     </article>`).join("")}
   </div>
-  <p class="muted small" style="margin-top:18px">${P.mode === "daily" ? `Today's puzzles (${today()}) are the same for everyone, all day.` : "Fresh puzzles are new every time."} Progress is kept in this browser only.</p>`;
+  <p class="muted small" style="margin-top:18px">${P.mode === "daily" ? `Today's puzzles (${today()}) are the same for everyone, all day.` : "Fresh puzzles lead with the terms you have seen least recently, so nothing repeats until you have seen the rest."} Progress is kept in this browser only.</p>
+  <p class="muted small">Provisions cite the Civil Code (NCC), Family Code (FC), Revised Penal Code (RPC), Labor Code as renumbered (LC), NIRC as amended, Revised Corporation Code (RCC), Negotiable Instruments Law (NIL), the 1987 Constitution (by article) and the Rules of Court. Spot an error? Use "Report this clue" in a game.</p>`;
   bindSegs(app, hub);
+  $("#subj").onchange = e => { P.subject = e.target.value; saveJSON(PREF_KEY, P); hub(); };
+  $("#unrev")?.addEventListener("change", e => { P.unreviewed = e.target.checked; saveJSON(PREF_KEY, P); hub(); });
+  $("#to-review")?.addEventListener("click", review);
   app.querySelectorAll("[data-play]").forEach(b => b.addEventListener("click", () => play(b.dataset.play)));
 }
 
 function play(id, again) {
-  if (cleanup) { cleanup(); cleanup = null; }
-  current = id;
+  leave();
+  current = id; FRESH = !!again;
   const g = GAMES[id], cfg = CFG[id][P.diff];
-  const seed = P.mode === "daily" && !again ? hash(`${today()}|${id}|${P.diff}|${g.themed ? P.theme : ""}`) : (Math.random() * 2 ** 32) >>> 0;
+  const daily = P.mode === "daily" && !again;
+  const seed = daily ? hash(`${today()}|${id}|${P.diff}|${g.themed ? `${P.theme}|${P.subject}` : ""}`) : (Math.random() * 2 ** 32) >>> 0;
   const rng = mulberry(seed);
+  const subjLabel = P.theme === "general" ? "General" : P.subject === "all" ? "Bar review" : SUBJECTS[P.subject];
   app.innerHTML = `
   <div class="bench">
     <div class="row"><button id="back">All games</button><h2>${esc(g.name)}</h2>
-      ${g.themed ? `<span class="pill acc">${P.theme === "bar" ? "Bar review" : "General"}</span>` : ""}
-      ${P.mode === "daily" && !again ? `<span class="pill idle">Today's</span>` : ""}</div>
+      ${g.themed ? `<span class="pill acc">${esc(subjLabel)}</span>` : ""}
+      ${daily ? `<span class="pill idle">Today's</span>` : ""}</div>
     <div class="row">${diffSeg()}<span class="timer" id="timer">0:00</span><button id="again">New puzzle</button></div>
   </div>
   <div id="stage"></div>`;
   $("#back").onclick = hub;
   $("#again").onclick = () => play(id, true);
-  bindSegs($(".bench"), () => play(id));
-  cleanup = MAKERS[id]($("#stage"), cfg, rng, BANK[P.theme]);
+  bindSegs($(".bench"), () => play(id, again));
+  if (g.themed && pool().length < 8) {
+    $("#stage").innerHTML = `<div class="panel"><p>${esc(subjLabel)} has too few terms for this game yet. Choose "All eight subjects" or another subject.</p></div>`;
+    return;
+  }
+  cleanup = MAKERS[id]($("#stage"), cfg, rng);
 }
 
 // A shared clock: counts up, or down when given a limit
@@ -387,12 +809,35 @@ function verdict(stage, title, detail, gameId) {
   box.scrollIntoView({ block: "nearest" });
 }
 
+// "Report this clue": sends the term and clue to the shared store for review
+function reportSlot(slot, ctx) {
+  if (!slot) return;
+  if (!DB || CAN_WRITE === false) { slot.innerHTML = ""; return; }
+  slot.innerHTML = `<button type="button" class="quiet">Report this clue</button>`;
+  slot.firstChild.onclick = () => {
+    const c = ctx(); if (!c) return;
+    slot.innerHTML = `<form class="report"><input id="rp-note" maxlength="300" placeholder="What is wrong? (optional)" aria-label="What is wrong with this clue"><button class="primary" type="submit">Send</button><button type="button" id="rp-x">Cancel</button></form>`;
+    $("#rp-x", slot).onclick = () => reportSlot(slot, ctx);
+    $("form", slot).onsubmit = async e => {
+      e.preventDefault();
+      const note = $("#rp-note", slot).value.trim();
+      slot.innerHTML = `<span class="small muted">Sending…</span>`;
+      try {
+        await DB.collection("flags").add({ a: c.term.a, s: c.term.s, clue: c.clue, note, src: c.term.src, pack: c.term.pack || "", at: new Date().toISOString() });
+        slot.innerHTML = `<span class="small" style="color:var(--good)">Sent for review. Thank you.</span>`;
+      } catch (err) {
+        slot.innerHTML = `<span class="small" style="color:var(--bad)">Could not send the report${err?.code === "invalid_argument" ? ": your access is view-only" : ""}.</span>`;
+      }
+    };
+  };
+}
+
 // ---------- Crossword ----------
-function buildCrossword(bank, cfg, rng) {
-  const pool = bank.filter(([a]) => a.length >= 3 && a.length <= cfg.maxLen);
+function buildCrossword(ordered, cfg, rng) {
+  const cands = ordered.filter(t => t.a.length >= 3 && t.a.length <= cfg.maxLen).slice(0, Math.max(cfg.words * 3, 30));
   let best = null;
   for (let attempt = 0; attempt < 60; attempt++) {
-    const res = tryCrossword(shuffle(pool, rng), cfg.words, 15, rng);
+    const res = tryCrossword(shuffle(cands, rng), cfg.words, 15, rng);
     const area = (res.maxR - res.minR + 1) * (res.maxC - res.minC + 1);
     if (!best || res.placed.length > best.placed.length || (res.placed.length === best.placed.length && area < best.area)) best = { ...res, area };
     if (best.placed.length >= cfg.words && attempt >= 15) break;
@@ -407,7 +852,7 @@ function buildCrossword(bank, cfg, rng) {
   placed.forEach(p => [...p.a].forEach((ch, i) => { grid[p.r + (p.dir === "D" ? i : 0)][p.c + (p.dir === "A" ? i : 0)] = ch; }));
   return { placed, grid, H, W };
 }
-function tryCrossword(words, target, maxSize, rng) {
+function tryCrossword(terms, target, maxSize, rng) {
   const cells = new Map(), placed = [];
   let minR = 0, maxR = 0, minC = 0, maxC = 0;
   const key = (r, c) => r + "," + c;
@@ -423,34 +868,37 @@ function tryCrossword(words, target, maxSize, rng) {
     }
     return inter;
   }
-  function put(w, r, c, dir) {
+  function put(t, r, c, dir) {
     const dr = dir === "D" ? 1 : 0, dc = dir === "A" ? 1 : 0;
-    [...w[0]].forEach((ch, i) => {
+    [...t.a].forEach((ch, i) => {
       const k = key(r + dr * i, c + dc * i), cell = cells.get(k) || { ch, dirs: new Set(), r: r + dr * i, c: c + dc * i };
       cell.dirs.add(dir); cells.set(k, cell);
     });
-    minR = Math.min(minR, r); minC = Math.min(minC, c); maxR = Math.max(maxR, r + dr * (w[0].length - 1)); maxC = Math.max(maxC, c + dc * (w[0].length - 1));
-    placed.push({ a: w[0], clue: w[1], r, c, dir });
+    minR = Math.min(minR, r); minC = Math.min(minC, c); maxR = Math.max(maxR, r + dr * (t.a.length - 1)); maxC = Math.max(maxC, c + dc * (t.a.length - 1));
+    placed.push({ a: t.a, term: t, r, c, dir });
   }
-  put(words[0], 0, 0, rng() < .5 ? "A" : "D");
-  for (const w of words.slice(1)) {
+  put(terms[0], 0, 0, rng() < .5 ? "A" : "D");
+  for (const t of terms.slice(1)) {
     if (placed.length >= target) break;
     let opts = [], top = 0;
-    for (const cell of cells.values()) for (let i = 0; i < w[0].length; i++) {
-      if (w[0][i] !== cell.ch) continue;
+    for (const cell of cells.values()) for (let i = 0; i < t.a.length; i++) {
+      if (t.a[i] !== cell.ch) continue;
       for (const dir of ["A", "D"]) {
-        const r = dir === "D" ? cell.r - i : cell.r, c = dir === "A" ? cell.c - i : cell.c, s = fits(w[0], r, c, dir);
+        const r = dir === "D" ? cell.r - i : cell.r, c = dir === "A" ? cell.c - i : cell.c, s = fits(t.a, r, c, dir);
         if (s > top) { top = s; opts = []; }
         if (s > 0 && s === top) opts.push([r, c, dir]);
       }
     }
-    if (opts.length) { const [r, c, dir] = opts[Math.floor(rng() * opts.length)]; put(w, r, c, dir); }
+    if (opts.length) { const [r, c, dir] = opts[Math.floor(rng() * opts.length)]; put(t, r, c, dir); }
   }
   return { placed, minR, maxR, minC, maxC };
 }
 
-function crossword(stage, cfg, rng, bank) {
-  const { placed, grid, H, W } = buildCrossword(bank, cfg, rng);
+function crossword(stage, cfg, rng) {
+  const terms = pool(), counts = citeCounts(barPool());
+  const { placed, grid, H, W } = buildCrossword(order(terms, rng), cfg, rng);
+  placed.forEach(p => p.clue = clueFor(p.term, rng, counts));
+  markSeen(placed.map(p => p.term));
   let reveals = cfg.reveals, dir = "A", cur = null, done = false, revealed = 0;
   const across = placed.filter(p => p.dir === "A").sort((a, b) => a.n - b.n), down = placed.filter(p => p.dir === "D").sort((a, b) => a.n - b.n);
   const startNo = {}; placed.forEach(p => startNo[p.r + "," + p.c] = p.n);
@@ -466,6 +914,7 @@ function crossword(stage, cfg, rng, bank) {
         ${cfg.reveals ? `<button id="cw-reveal">Reveal letter (<span id="cw-left">${reveals}</span>)</button>` : ""}
         <span class="status" id="cw-status"></span>
       </div>
+      <div class="slot" id="cw-report"></div>
     </div>
     <div class="clues">
       <div><span class="label">Across</span><ol>${across.map(p => `<li data-w="${placed.indexOf(p)}"><b>${p.n}</b><span>${esc(p.clue)} <span class="muted">(${p.a.length})</span></span></li>`).join("")}</ol></div>
@@ -476,6 +925,7 @@ function crossword(stage, cfg, rng, bank) {
   const inp = (r, c) => grid[r]?.[c] ? $(`#cw-${r}-${c}`, stage) : null;
   const wordOf = (r, c, d) => placed.find(p => p.dir === d && (d === "A" ? p.r === r && c >= p.c && c < p.c + p.a.length : p.c === c && r >= p.r && r < p.r + p.a.length));
   const status = (msg, cls = "") => { const s = $("#cw-status"); s.textContent = msg; s.className = "status " + cls; };
+  reportSlot($("#cw-report"), () => { const w = cur && wordOf(cur.r, cur.c, dir); return w && { term: w.term, clue: w.clue }; });
 
   function paint() {
     stage.querySelectorAll(".cell.on").forEach(el => el.classList.remove("cur", "word"));
@@ -577,11 +1027,13 @@ function crossword(stage, cfg, rng, bank) {
 }
 
 // ---------- Anagram Sprint ----------
-function scramble(stage, cfg, rng, bank) {
-  const pool = bank.filter(([a]) => a.length >= cfg.min && a.length <= cfg.max);
-  const words = shuffle(pool, rng).slice(0, cfg.n).map(([a, clue]) => {
-    let mix = a; for (let k = 0; k < 12 && mix === a; k++) mix = shuffle([...a], rng).join("");
-    return { a, clue, mix, prefix: cfg.first ? 1 : 0, showClue: cfg.clue, hints: 0, result: null };
+function scramble(stage, cfg, rng) {
+  const counts = citeCounts(barPool());
+  const picked = order(pool().filter(t => t.a.length >= cfg.min && t.a.length <= cfg.max), rng).slice(0, cfg.n);
+  markSeen(picked);
+  const words = picked.map(t => {
+    let mix = t.a; for (let k = 0; k < 12 && mix === t.a; k++) mix = shuffle([...t.a], rng).join("");
+    return { term: t, a: t.a, clue: clueFor(t, rng, counts), mix, prefix: cfg.first ? 1 : 0, showClue: cfg.clue, hints: 0, result: null };
   });
   let i = 0, score = 0, over = false;
   stage.innerHTML = `
@@ -596,6 +1048,7 @@ function scramble(stage, cfg, rng, bank) {
       <button type="button" id="sc-skip">Skip</button>
     </form>
     <p class="status" id="sc-status" style="text-align:center"></p>
+    <div class="slot" id="sc-report" style="text-align:center"></div>
   </div>`;
   const timer = clock(cfg.secs * 1000, () => finish("Time is up."));
   const input = $("#sc-in");
@@ -604,6 +1057,7 @@ function scramble(stage, cfg, rng, bank) {
     $("#sc-pos").textContent = `Word ${i + 1} of ${words.length} · ${w.a.length} letters`;
     $("#sc-tiles").innerHTML = [...w.mix].map(ch => `<span class="tile">${ch}</span>`).join("");
     $("#sc-clue").innerHTML = (w.showClue ? esc(w.clue) : `<span class="muted">Clue hidden</span>`) + (w.prefix ? ` <span class="muted">· starts with</span> <b style="font-family:var(--f-mono)">${w.a.slice(0, w.prefix)}</b>` : "");
+    reportSlot($("#sc-report"), () => w.showClue && { term: w.term, clue: w.clue });
     input.value = ""; input.focus();
   }
   function next() { i++; if (i >= words.length) finish("All words done."); else show(); }
@@ -614,8 +1068,9 @@ function scramble(stage, cfg, rng, bank) {
     const solved = words.filter(w => w.result === "ok").length;
     if (solved) record("scramble", score);
     $("#sc-status").textContent = "";
+    $("#sc-report").innerHTML = "";
     stage.insertAdjacentHTML("beforeend", `<div class="panel" style="margin-top:14px"><h3>Tally</h3><div class="tablewrap"><table class="tally"><tbody>${words.map(w =>
-      `<tr><td>${w.a}</td><td>${w.result === "ok" ? `<span class="pill good">Solved</span>` : w.result === "skip" ? `<span class="pill warn">Skipped</span>` : `<span class="pill idle">Unseen</span>`}</td><td>${esc(w.clue)}</td></tr>`).join("")}</tbody></table></div></div>`);
+      `<tr><td>${esc(w.term.d)}</td><td>${w.result === "ok" ? `<span class="pill good">Solved</span>` : w.result === "skip" ? `<span class="pill warn">Skipped</span>` : `<span class="pill idle">Unseen</span>`}</td><td>${esc(w.clue)}${w.term.k ? ` <span class="muted">(${esc(w.term.k)})</span>` : ""}</td></tr>`).join("")}</tbody></table></div></div>`);
     verdict(stage, `${score} points`, `${why} ${solved} of ${words.length} solved. ${statLine("scramble")}.`, "scramble");
   }
   $("#sc-form").addEventListener("submit", e => {
@@ -625,7 +1080,7 @@ function scramble(stage, cfg, rng, bank) {
     if (guess === w.a) {
       const pts = Math.max(1, w.a.length - w.hints * 2); score += pts; w.result = "ok";
       $("#sc-score").textContent = `${score} pts`;
-      $("#sc-status").className = "status good"; $("#sc-status").textContent = `${w.a}, +${pts}`;
+      $("#sc-status").className = "status good"; $("#sc-status").textContent = `${w.term.d}, +${pts}`;
       next();
     } else {
       $("#sc-status").className = "status bad"; $("#sc-status").textContent = "Not quite.";
@@ -637,20 +1092,34 @@ function scramble(stage, cfg, rng, bank) {
     if (!w.showClue) w.showClue = true; else if (w.prefix < w.a.length - 1) w.prefix++; else return;
     w.hints++; show();
   };
-  $("#sc-skip").onclick = () => { words[i].result = "skip"; $("#sc-status").className = "status warn"; $("#sc-status").textContent = `Skipped ${words[i].a}`; next(); };
+  $("#sc-skip").onclick = () => { words[i].result = "skip"; $("#sc-status").className = "status warn"; $("#sc-status").textContent = `Skipped ${words[i].term.d}`; next(); };
   show();
   return () => { over = true; timer.stop(); };
 }
 
 // ---------- Memory Match ----------
 function memory(stage, cfg, rng) {
-  const deck = P.theme === "bar"
-    ? shuffle(CITES, rng).slice(0, cfg.pairs).flatMap(([t, c], pid) => [{ pid, html: `<span class="face">${esc(t)}</span>` }, { pid, html: `<span class="face cite">${esc(c)}</span>` }])
-    : shuffle(SYMBOLS, rng).slice(0, cfg.pairs).flatMap((s, pid) => [0, 1].map(() => ({ pid, html: `<span class="face big">${s}</span>` })));
-  const cards = shuffle(deck, rng);
+  let deck, note = "";
+  if (P.theme === "bar") {
+    // Each provision appears once, so every pair is unambiguous; top up from other subjects when one runs short
+    const picked = [], cites = new Set();
+    for (const t of [...order(pool().filter(t => t.k), rng), ...order(barPool().filter(t => t.k), rng)]) {
+      if (picked.length >= cfg.pairs) break;
+      if (cites.has(t.k)) continue;
+      cites.add(t.k); picked.push(t);
+    }
+    const own = picked.filter(t => t.s === P.subject).length;
+    if (P.subject !== "all" && own < picked.length) note = own
+      ? `${SUBJECTS[P.subject]} has too few cited terms for ${cfg.pairs} pairs, so some come from other subjects.`
+      : `${SUBJECTS[P.subject]} has no terms tied to a provision yet, so these pairs come from other subjects.`;
+    markSeen(picked);
+    deck = picked.flatMap((t, pid) => [{ pid, html: `<span class="face">${esc(t.d)}</span>` }, { pid, html: `<span class="face cite">${esc(t.k)}</span>` }]);
+  } else deck = shuffle(SYMBOLS, rng).slice(0, cfg.pairs).flatMap((s, pid) => [0, 1].map(() => ({ pid, html: `<span class="face big">${s}</span>` })));
+  const pairs = deck.length / 2, cards = shuffle(deck, rng);
   let open = [], moves = 0, got = 0, lock = !!cfg.peek, over = false, timer = null, wait = null;
   stage.innerHTML = `
-  <div class="row" style="justify-content:space-between;margin-bottom:12px"><span class="status" id="mm-status">${cfg.peek ? "Memorise the cards…" : ""}</span><span class="pill idle" id="mm-moves">0 moves · 0 of ${cfg.pairs} pairs</span></div>
+  ${note ? `<p class="muted small" style="margin-bottom:8px">${esc(note)}</p>` : ""}
+  <div class="row" style="justify-content:space-between;margin-bottom:12px"><span class="status" id="mm-status">${cfg.peek ? "Memorise the cards…" : ""}</span><span class="pill idle" id="mm-moves">0 moves · 0 of ${pairs} pairs</span></div>
   <div class="cards">${cards.map((c, k) => `<button class="card${cfg.peek ? " up" : ""}" data-k="${k}" aria-label="Card ${k + 1}">${cfg.peek ? c.html : `<span class="back">§</span>`}</button>`).join("")}</div>`;
   const btn = k => stage.querySelector(`.card[data-k="${k}"]`);
   const face = (k, up) => { const b = btn(k); b.classList.toggle("up", up); b.innerHTML = up ? cards[k].html : `<span class="back">§</span>`; };
@@ -665,12 +1134,12 @@ function memory(stage, cfg, rng) {
     const [x, y] = open; open = [];
     if (cards[x].pid === cards[y].pid) {
       btn(x).classList.add("got"); btn(y).classList.add("got"); got++;
-      if (got === cfg.pairs) {
+      if (got === pairs) {
         over = true; const ms = timer.stop(); record("memory", ms);
-        verdict(stage, `Cleared in ${fmt(ms)}`, `${moves} moves for ${cfg.pairs} pairs. ${statLine("memory")}.`, "memory");
+        verdict(stage, `Cleared in ${fmt(ms)}`, `${moves} moves for ${pairs} pairs. ${statLine("memory")}.`, "memory");
       }
     } else { lock = true; wait = setTimeout(() => { face(x, false); face(y, false); lock = false; }, 850); }
-    $("#mm-moves").textContent = `${moves} moves · ${got} of ${cfg.pairs} pairs`;
+    $("#mm-moves").textContent = `${moves} moves · ${got} of ${pairs} pairs`;
   }));
   return () => { clearTimeout(wait); timer?.stop(); };
 }
@@ -757,6 +1226,147 @@ function sudoku(stage, cfg, rng) {
   return () => timer.stop();
 }
 
+// ---------- Editor's desk: review drafted terms and reported clues ----------
+let GEN = { busy: false, msg: "", cls: "" }, genCtl = null;
+const saving = {};
+function setStatus(packId, idxs, status) {
+  const ref = DB.doc("packs/" + packId);
+  // One write at a time per pack document
+  saving[packId] = (saving[packId] || Promise.resolve()).then(async () => {
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const terms = (snap.data().terms || []).map((t, i) => idxs.includes(i) ? { ...t, status } : t);
+    await ref.update({ terms });
+  }).catch(e => { GEN = { busy: GEN.busy, msg: `Could not save the review (${e?.code || "error"}).`, cls: "bad" }; if (current === "review") review(); });
+}
+
+function review() {
+  leave();
+  current = "review";
+  const pending = packTerms(["pending"]);
+  const byPack = {};
+  pending.forEach(t => (byPack[t.pack] = byPack[t.pack] || []).push(t));
+  const packOf = id => PACKS.find(p => p.id === id) || {};
+  app.innerHTML = `
+  <header class="mast">
+    <div><p class="label">Mind Docket · Editor's desk</p><h1>Review content</h1>
+      <p class="muted">New terms reach the games only after you approve them. Reported clues land here too.</p></div>
+    <button id="back">All games</button>
+  </header>
+  <section class="panel desk">
+    <h2>Draft new terms</h2>
+    <p class="muted small">Claude drafts terms for one subject, avoiding every term already in the bank or in a pack. Drafts wait below for your approval. Each draft uses your own Claude usage.</p>
+    ${SAMPLE && DB ? `<div class="row">
+      <label for="gen-subj" class="sr">Subject</label>
+      <select id="gen-subj">${Object.entries(SUBJECTS).map(([k, v]) => `<option value="${k}" ${P.subject === k ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>
+      <label for="gen-n" class="sr">How many</label>
+      <select id="gen-n"><option value="8">8 terms</option><option value="12" selected>12 terms</option><option value="20">20 terms</option></select>
+      <button class="primary" id="gen-go" ${GEN.busy ? "disabled" : ""}>Draft terms</button>
+      ${GEN.busy ? `<button id="gen-stop">Stop</button>` : ""}
+    </div>` : `<p class="small">Drafting is not available in this view. Weekly packs still arrive here for review.</p>`}
+    <p class="status ${GEN.cls}" id="gen-msg">${esc(GEN.msg)}</p>
+  </section>
+  <h2>Awaiting review (${pending.length})</h2>
+  ${pending.length ? Object.entries(byPack).map(([id, ts]) => `
+    <div class="packhead"><p><b>${esc(packOf(id).title || id)}</b> <span class="muted small">· ${esc(packOf(id).source === "weekly" ? "weekly task" : "drafted on this page")} · ${esc(String(packOf(id).created || "").slice(0, 10))}</span></p>
+      <button data-all="${esc(id)}">Approve all ${ts.length}</button></div>
+    <div class="terms">${ts.map(t => `
+      <article class="term">
+        <div class="top"><h3>${esc(t.d)}</h3><span class="pill idle">${esc(SUBJECTS[t.s])}</span></div>
+        <p class="mono small">${esc(t.a)}${t.k ? ` · ${esc(t.k)}` : ` · <span class="muted">no provision</span>`}</p>
+        <ol class="small">${t.c.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+        <div class="row"><button class="primary" data-set="approved" data-pack="${esc(id)}" data-idx="${t.idx}">Approve</button><button data-set="rejected" data-pack="${esc(id)}" data-idx="${t.idx}">Reject</button></div>
+      </article>`).join("")}</div>`).join("") : `<p class="muted" style="margin-block:8px 22px">Nothing is waiting. New packs appear here.</p>`}
+  <h2>Reported clues (${FLAGS.length})</h2>
+  ${FLAGS.length ? `<div class="terms">${FLAGS.map(f => `
+    <article class="term">
+      <div class="top"><h3 class="mono">${esc(f.a)}</h3><span class="pill warn">${esc(SUBJECTS[f.s] || "")}</span></div>
+      <p class="small">${esc(f.clue)}</p>
+      ${f.note ? `<p class="small"><b>Note:</b> ${esc(f.note)}</p>` : ""}
+      <p class="muted small">${esc(String(f.at || "").slice(0, 10))} · ${f.src === "pack" ? "from a pack" : "from the verified bank"}</p>
+      <div class="row">${f.src === "pack" && f.pack ? `<button data-flagreject="${esc(f.id)}">Reject term</button>` : ""}<button data-dismiss="${esc(f.id)}">Dismiss</button></div>
+    </article>`).join("")}</div>
+    <p class="muted small">Reports on verified-bank terms are fixed in the page's source: ask Claude to correct them.</p>` : `<p class="muted" style="margin-block:8px 22px">No reports.</p>`}`;
+  $("#back").onclick = hub;
+  $("#gen-go")?.addEventListener("click", () => draft($("#gen-subj").value, +$("#gen-n").value));
+  $("#gen-stop")?.addEventListener("click", () => genCtl?.abort());
+  app.querySelectorAll("[data-set]").forEach(b => b.addEventListener("click", () => { b.disabled = true; setStatus(b.dataset.pack, [+b.dataset.idx], b.dataset.set); }));
+  app.querySelectorAll("[data-all]").forEach(b => b.addEventListener("click", () => { b.disabled = true; setStatus(b.dataset.all, byPack[b.dataset.all].map(t => t.idx), "approved"); }));
+  app.querySelectorAll("[data-dismiss]").forEach(b => b.addEventListener("click", () => { b.disabled = true; DB.doc("flags/" + b.dataset.dismiss).delete().catch(() => { b.disabled = false; }); }));
+  app.querySelectorAll("[data-flagreject]").forEach(b => b.addEventListener("click", () => {
+    const f = FLAGS.find(x => x.id === b.dataset.flagreject), p = PACKS.find(x => x.id === f.pack), i = (p?.terms || []).findIndex(t => t.a === f.a);
+    b.disabled = true;
+    if (i >= 0) setStatus(p.id, [i], "rejected");
+    DB.doc("flags/" + f.id).delete().catch(() => {});
+  }));
+}
+
+function cleanDraft(out, subject, avoid) {
+  const list = Array.isArray(out) ? out : Array.isArray(out?.terms) ? out.terms : [];
+  const res = [];
+  for (const x of list) {
+    const a = String(x?.answer || "").toUpperCase().replace(/[^A-Z]/g, "");
+    if (!/^[A-Z]{3,14}$/.test(a) || avoid.has(a)) continue;
+    const c = (Array.isArray(x.clues) ? x.clues : []).map(s => String(s).trim())
+      .filter(s => s && s.length <= 160 && !(a.length >= 5 && s.toUpperCase().replace(/[^A-Z]/g, "").includes(a)));
+    if (!c.length) continue;
+    avoid.add(a);
+    res.push({ a, s: subject, d: String(x.display || titleCase(a)).slice(0, 60), k: String(x.cite || "").slice(0, 40), c: c.slice(0, 3), status: "pending" });
+  }
+  return res;
+}
+async function draft(subject, n) {
+  if (GEN.busy || !SAMPLE || !DB) return;
+  const avoid = new Set([...BAR_BANK.map(t => t.a), ...PACKS.flatMap(p => (p.terms || []).map(t => t.a))]);
+  const have = [...BAR_BANK, ...packTerms(["approved", "pending"])].filter(t => t.s === subject).map(t => t.a);
+  const prompt = [
+    "You are drafting terms for a Philippine Bar review word game (crossword, anagram and memory match).",
+    `Subject: ${SUBJECTS[subject]}.`,
+    `Draft ${n + 4} NEW terms. Do not use any of these answers: ${have.join(", ")}.`,
+    "Rules:",
+    "- answer: the term in capital letters A-Z only, 3 to 14 letters, with spaces and hyphens removed (for example RESJUDICATA).",
+    "- display: the term as normally written (for example \"Res judicata\").",
+    "- clues: two clues of at most 110 characters each. The first defines the term. The second takes another angle: how it differs from a confusable doctrine, a leading case, or the provision's wording with ___ in place of the term. Never write the answer inside a clue.",
+    "- cite: the exact governing provision, written like \"Art. 1191, NCC\", \"Rule 57\", \"Sec. 228, NIRC\", \"Art. 297, LC\", \"RCC, Sec. 80\" or \"Art. III, Sec. 2\". Give it only if you are certain; otherwise use an empty string.",
+    "- Use current law only: the 1987 Constitution, the Civil and Family Codes, the RPC as amended, the Labor Code as renumbered, the NIRC as amended by TRAIN and CREATE, the Revised Corporation Code, the 2019 amendments to the Rules of Civil Procedure and of Evidence, and the 2023 CPRA.",
+    "- Prefer terms and doctrines commonly tested in the Bar.",
+    'Reply with only a JSON array: [{"answer": "...", "display": "...", "clues": ["...", "..."], "cite": "..."}]'
+  ].join("\n");
+  GEN = { busy: true, msg: "Drafting… this can take a minute.", cls: "" };
+  genCtl = new AbortController();
+  review();
+  try {
+    const out = await SAMPLE.json(prompt, { modelTier: "complex", cache: false, signal: genCtl.signal });
+    const terms = cleanDraft(out, subject, avoid).slice(0, n);
+    if (!terms.length) throw { code: "empty" };
+    await DB.collection("packs").add({ title: `${SUBJECTS[subject]}, drafted ${today()}`, subject, created: new Date().toISOString(), source: "page", terms });
+    GEN = { busy: false, msg: `${terms.length} terms drafted. Review them below.`, cls: "good" };
+  } catch (e) {
+    const why = {
+      cancelled: "Stopped.", not_granted: "Claude is not allowed on this page for you.", sampling_disabled: "Claude is not available for this account.",
+      rate_limited: "Too many requests just now. Try again later.", empty: "The draft had no usable terms. Try again.",
+      invalid_json: "The draft came back in the wrong format. Try again.", quota_exceeded: "The store is full. Delete old packs first."
+    }[e?.code] || "The draft failed. Try again.";
+    GEN = { busy: false, msg: why, cls: e?.code === "cancelled" ? "" : "bad" };
+  }
+  if (current === "review") review();
+}
+
+// ---------- Shared store: packs and reports ----------
+function refresh() { if (current === null) hub(); else if (current === "review") review(); }
+async function boot() {
+  if (!window.claude?.use) return;
+  const [db, user, sample] = await Promise.all(["db", "user", "sample"].map(n => claude.use(n).catch(() => null)));
+  SAMPLE = sample;
+  if (user) { CAN_EDIT = await user.canEdit().catch(() => false); CAN_WRITE = await user.can("data.write").catch(() => null); }
+  if (!db) return;
+  DB = db;
+  db.collection("packs").onSnapshot(s => { PACKS = s.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); }, () => {});
+  if (CAN_EDIT) db.collection("flags").orderBy("at", "desc").limit(200).onSnapshot(s => { FLAGS = s.docs.map(d => ({ id: d.id, ...d.data() })); refresh(); }, () => {});
+  refresh();
+}
+
 const MAKERS = { crossword, scramble, memory, sudoku };
 hub();
+boot();
 </script>
