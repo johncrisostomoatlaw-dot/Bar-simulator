@@ -914,7 +914,8 @@ function hub() {
     </article>`).join("")}
   </div>
   <p class="muted small" style="margin-top:18px">${P.mode === "daily" ? `Today's puzzles (${today()}) are the same for everyone, all day.` : "Fresh puzzles lead with the terms you have seen least recently, so nothing repeats until you have seen the rest."} Progress is kept in this browser only.</p>
-  <p class="muted small">Provisions cite the Civil Code (NCC), Family Code (FC), Revised Penal Code (RPC), Labor Code as renumbered (LC), NIRC as amended, Revised Corporation Code (RCC), Negotiable Instruments Law (NIL), the 1987 Constitution (by article) and the Rules of Court. Spot an error? Use "Report this clue" in a game.</p>`;
+  <p class="muted small">Provisions cite the Civil Code (NCC), Family Code (FC), Revised Penal Code (RPC), Labor Code as renumbered (LC), NIRC as amended, Revised Corporation Code (RCC), Negotiable Instruments Law (NIL), the 1987 Constitution (by article) and the Rules of Court. Spot an error? Use "Report this clue" in a game.</p>
+  <p class="small" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--rule)">© ${new Date().getFullYear()} John Paul Crisostomo. All rights reserved.</p>`;
   bindSegs(app, hub);
   $("#subj").onchange = e => { P.subject = e.target.value; saveJSON(PREF_KEY, P); hub(); };
   $("#unrev")?.addEventListener("change", e => { P.unreviewed = e.target.checked; saveJSON(PREF_KEY, P); hub(); });
