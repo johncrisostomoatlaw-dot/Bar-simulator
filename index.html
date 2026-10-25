@@ -93,6 +93,29 @@ summary { cursor: pointer; font-weight: 600 }
 .score-in { width: 80px }
 .small { font-size: .85rem }
 @media (prefers-reduced-motion: no-preference) { .bar > i { transition: width .5s ease } }
+
+/* Drills: objection drill and client intake */
+.sect { margin-block: 28px 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap }
+.drill { border-top: 3px solid var(--gold) }
+.trial { font-family: var(--f-display); font-size: 1.2rem; line-height: 1.6; border-left: 3px solid var(--accent); padding: 6px 0 6px 16px; max-width: 68ch }
+.clock { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden }
+.clock > i { display: block; height: 100%; background: var(--gold) }
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px }
+.opts button { text-align: left; font-weight: 500 }
+.opts button.on { border-color: var(--accent); color: var(--accent); font-weight: 700 }
+.opts button.right { border-color: var(--good); color: var(--good); font-weight: 700 }
+.opts button.wrong { border-color: var(--bad); color: var(--bad); text-decoration: line-through }
+.verdict { font-weight: 700 } .verdict.ok { color: var(--good) } .verdict.no { color: var(--bad) }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start }
+@media (max-width: 760px) { .split { grid-template-columns: minmax(0, 1fr) } }
+.chat { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow: auto; padding: 4px }
+.msg { max-width: 85%; padding: 8px 12px; border-radius: 10px; background: var(--soft); white-space: pre-wrap }
+.msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink) }
+.msg.who { font-size: .72rem; font-weight: 600; color: var(--muted); background: none; padding: 0 2px }
+.ask { display: flex; gap: 8px; margin-top: 12px }
+.ask input { flex: 1; min-width: 0; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; font: inherit }
+.notes { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: .9rem }
+.breach { border: 1px solid var(--bad); color: var(--bad); border-radius: 8px; padding: 12px 14px; font-weight: 600 }
 </style>
 
 <div class="wrap" id="app"></div>
@@ -169,11 +192,218 @@ const BANK = {
   ],
 };
 
+// Objection drill. Each line is tagged with the one ground a trial lawyer should state; "NONE" means the question or answer is proper.
+const GROUNDS = {
+  LEADING: "Leading", MISLEADING: "Misleading", HEARSAY: "Hearsay", ODR: "Original document rule", OPINION: "Improper opinion",
+  PRIVILEGE: "Privilege / marital disqualification", IRRELEVANT: "Irrelevant", CHARACTER: "Character / similar acts",
+  COMPROMISE: "Offer of compromise", ARGUMENTATIVE: "Argumentative / insulting", NONE: "No valid objection",
+};
+const OBJ = [
+  { ctx: "Homicide · direct examination of the prosecution's eyewitness", line: "Q: “You saw the accused holding a knife when he entered the store, didn't you?”", g: "LEADING",
+    why: "It suggests the answer the examiner wants. Leading questions are not allowed on direct examination unless an exception applies (Rule 132, Sec. 10). None does: this is a material fact, and the witness is not a child, hostile, or the adverse party." },
+  { ctx: "Homicide · defense counsel cross-examines the same eyewitness", line: "Q: “You were about fifty meters away when the stabbing happened, correct?”", g: "NONE",
+    why: "Leading questions are allowed on cross-examination (Rule 132, Sec. 10(a)), and testing the witness's vantage point is within the scope of cross (Sec. 6)." },
+  { ctx: "Robbery · direct examination of the complainant. So far she has testified only that a man entered her store.", line: "Q: “After the accused ran off with your cash box, what did you do?”", g: "MISLEADING",
+    why: "It assumes as true a fact not yet testified to, that the accused took a cash box. Misleading questions are never allowed (Rule 132, Sec. 10, last paragraph)." },
+  { ctx: "Arson · direct examination of a neighbor, offered to prove that Pedro set the fire", line: "A: “My cousin Lorna told me she saw Pedro pour gasoline on the wall.”", g: "HEARSAY",
+    why: "Lorna's out-of-court statement is offered to prove the truth of what it asserts (Rule 130, Sec. 37), and the witness has no personal knowledge (Sec. 22). Object and move to strike the answer; the prosecution should call Lorna." },
+  { ctx: "Collection suit · direct examination of the plaintiff. The promissory note is in his folder but has not been presented.", line: "Q: “What were the terms of payment in the promissory note?”", g: "ODR",
+    why: "When the subject of inquiry is the contents of a document, the original must be produced (Rule 130, Sec. 3). No exception applies: the note is not lost, destroyed, or in the adverse party's custody." },
+  { ctx: "Parricide, insanity defense · direct examination of a jeepney driver who saw the accused once, on the day of the crime", line: "Q: “In your opinion, was the accused insane at that time?”", g: "OPINION",
+    why: "A lay witness may give an opinion on a person's mental sanity only if sufficiently acquainted with that person (Rule 130, Sec. 53(c)). One sighting is not enough. He may still describe what he saw, since impressions of behavior and condition are allowed (Sec. 53, last paragraph)." },
+  { ctx: "Estafa · the prosecution calls the accused's former lawyer", line: "Q: “What did the accused tell you when he consulted you about this transaction?”", g: "PRIVILEGE",
+    why: "Attorney-client privilege (Rule 130, Sec. 24(b)): without the client's consent, a lawyer cannot be examined on communications made in the course of professional employment. The privilege survives the end of the engagement. It does not cover advice sought to commit a crime or fraud, but nothing suggests that here." },
+  { ctx: "Estafa · direct examination of the complainant", line: "Q: “How many times has the accused been married?”", g: "IRRELEVANT",
+    why: "Evidence is relevant only if it has such a relation to the fact in issue as to induce belief in its existence or non-existence (Rule 128, Sec. 4). Marital history proves no element of estafa." },
+  { ctx: "Homicide · prosecution's case-in-chief. The accused has not offered evidence of his character.", line: "Q: “What is the accused's reputation in your barangay for peacefulness?”", g: "CHARACTER",
+    why: "The prosecution may not prove the accused's bad moral character except in rebuttal, after the accused has put his good character in issue (Rule 130, Sec. 54(a))." },
+  { ctx: "Acts of lasciviousness · direct examination of a 7-year-old complainant who freezes at open questions", line: "Q: “Did he touch you on your leg?”", g: "NONE",
+    why: "Leading questions are allowed when there is difficulty getting direct answers from a child of tender years (Rule 132, Sec. 10(c)). The Rule on Examination of a Child Witness (A.M. No. 004-07-SC, Sec. 20) lets the court allow them at every stage when they further the interests of justice." },
+  { ctx: "Breach of contract · the plaintiff calls the defendant to the stand as an adverse party", line: "Q: “You signed the contract on March 3, didn't you?”", g: "NONE",
+    why: "Leading questions are allowed of an adverse party, or of an officer, director, or managing agent of a corporation that is an adverse party (Rule 132, Sec. 10(e))." },
+  { ctx: "Theft · cross-examination of the complainant", line: "Q: “So you admit you are a liar who invented this whole story to extort money?”", g: "ARGUMENTATIVE",
+    why: "A witness has the right to be protected from irrelevant, improper, or insulting questions and from harsh or insulting demeanor (Rule 132, Sec. 3(1)). This argues with the witness instead of drawing out facts." },
+  { ctx: "Civil action for damages from a vehicular collision · direct examination of the plaintiff", line: "Q: “Did the defendant offer you ₱50,000 to settle before you filed this case?”", g: "COMPROMISE",
+    why: "In civil cases, an offer of compromise is not an admission of liability and is not admissible against the offeror (Rule 130, Sec. 28)." },
+  { ctx: "Estafa · direct examination of the complainant, offered to show the accused's guilt", line: "Q: “Did the accused offer to pay you back if you would withdraw the complaint?”", g: "NONE",
+    why: "In criminal cases, except quasi-offenses and crimes the law allows to be compromised, an offer of compromise by the accused may be received as an implied admission of guilt (Rule 130, Sec. 28). Estafa cannot be compromised, so the question is proper." },
+  { ctx: "Murder · direct examination of the victim's brother. The victim died two hours after the attack.", line: "A: “Gasping, my brother told me, ‘I'm dying. It was Pedro who stabbed me.’”", g: "NONE",
+    why: "Hearsay, but a dying declaration: it concerns the cause and circumstances of death, was made under consciousness of impending death, by a declarant who would have been competent, in a case where that death is in issue (Rule 130, Sec. 38). It may also be part of the res gestae (Sec. 44)." },
+  { ctx: "Civil case for damages · the plaintiff calls the defendant's attending physician, without the defendant's consent", line: "Q: “Doctor, what did the defendant tell you when he consulted you for treatment last year?”", g: "PRIVILEGE",
+    why: "Physician-patient privilege applies in civil cases (Rule 130, Sec. 24(c)): without the patient's consent, the physician cannot be examined on confidential communications made for diagnosis or treatment. It does not apply in criminal cases." },
+  { ctx: "Recovery of land · the plaintiff has proved that the only copy of the deed of sale burned in a house fire, without bad faith on his part", line: "Q: “What were the terms of the deed?”", g: "NONE",
+    why: "Once execution, existence, and loss without bad faith are proved, the contents may be shown by a copy, a recital in an authentic document, or testimony of witnesses, in that order (Rule 130, Sec. 5). The foundation is laid." },
+  { ctx: "Forgery · direct examination of the accused's former secretary, who saw him sign documents daily for five years", line: "Q: “Whose signature appears on this check?”", g: "NONE",
+    why: "A lay witness may give an opinion on handwriting with which he has sufficient familiarity (Rule 130, Sec. 53(b))." },
+  { ctx: "Collection suit · the court has declared the plaintiff's own witness unwilling and hostile", line: "Q: “You were at the meeting on May 1 when the defendant signed the note, weren't you?”", g: "NONE",
+    why: "Leading questions are allowed of an unwilling or hostile witness (Rule 132, Sec. 10(d)). The court has already so declared." },
+  { ctx: "B.P. Blg. 22 · direct examination of the complainant. The bank's return slip is in her folder but has not been marked.", line: "Q: “What reason for dishonor did the bank write on the return slip?”", g: "ODR",
+    why: "The question asks for the contents of a document, so the original must be produced (Rule 130, Sec. 3). Mark and present the return slip itself." },
+  { ctx: "Frustrated homicide · direct examination of the arresting officer", line: "Q: “Describe how the accused looked when you arrested him.”", g: "NONE",
+    why: "A witness may testify on his impressions of a person's emotion, behavior, condition, or appearance (Rule 130, Sec. 53, last paragraph). This calls for perception, not opinion." },
+  { ctx: "Robbery · prosecution's case-in-chief", line: "Q: “Has the accused robbed other houses in your barangay before?”", g: "CHARACTER",
+    why: "Evidence that a person did a similar act at another time is not admissible to prove that he did the same act now (Rule 130, Sec. 35). It may be received only to prove a specific intent, knowledge, identity, plan, system, scheme, habit, custom, or usage." },
+  { ctx: "Collection suit · direct examination of the plaintiff's office manager", line: "A: “Our collector told me the defendant admitted that he owed us the money.”", g: "HEARSAY",
+    why: "Double hearsay. The defendant's own admission is admissible against him (Rule 130, Sec. 27), but only through someone who heard it. The manager lacks personal knowledge (Sec. 22); call the collector." },
+  { ctx: "Damages for physical injuries · direct examination of the plaintiff. He has testified only that he was at the party.", line: "Q: “After the defendant hit you with the bottle, where did you go?”", g: "MISLEADING",
+    why: "It assumes a fact not yet in evidence: no one has testified that the defendant hit him with a bottle (Rule 132, Sec. 10, last paragraph)." },
+  { ctx: "Any case · start of the direct examination", line: "Q: “You are Juan dela Cruz, 45 years old, and you live in Pasig City?”", g: "NONE",
+    why: "Leading questions are allowed on preliminary matters (Rule 132, Sec. 10(b)). Name, age, and residence are not in dispute." },
+  { ctx: "Theft of a neighbor's motorcycle · the prosecution calls the accused's wife, over his objection", line: "Q: “Mrs. Santos, did your husband bring home a motorcycle that night?”", g: "PRIVILEGE",
+    why: "During the marriage, neither spouse may testify for or against the other without the affected spouse's consent, except in a civil case by one against the other, or a criminal case for a crime by one against the other or the latter's direct descendants or ascendants (Rule 130, Sec. 23). The victim is a neighbor, so no exception applies." },
+  { ctx: "Ejectment for non-payment of rent · direct examination of the lessor", line: "Q: “What religion does the defendant practice?”", g: "IRRELEVANT",
+    why: "The defendant's religion has no bearing on non-payment or the right to possession (Rule 128, Sec. 4)." },
+  { ctx: "Homicide · cross-examination. Counsel has shown the witness his sworn statement, and he has identified his signature.", line: "Q: “In paragraph 4 you swore you were asleep when the shooting happened. Today you said you saw it. Which is true?”", g: "NONE",
+    why: "Proper impeachment by a prior inconsistent statement. The foundation was laid: the statement was shown to the witness and he is given the chance to explain it (Rule 132, on impeachment by inconsistent statements)." },
+  { ctx: "Murder · cross-examination of a co-accused who was discharged to become a state witness", line: "Q: “You are testifying because the prosecution agreed to drop the charges against you, correct?”", g: "NONE",
+    why: "Showing a witness's interest or bias is proper on cross-examination (Rule 132, Sec. 6), and leading is allowed on cross (Sec. 10(a))." },
+  { ctx: "Murder · the prosecution calls the parish priest", line: "Q: “Father, what did the accused confess to you in the confessional last Sunday?”", g: "PRIVILEGE",
+    why: "Priest-penitent privilege (Rule 130, Sec. 24(d)): without the penitent's consent, a minister or priest cannot be examined on a confession made to him in his professional character." },
+  { ctx: "Collection suit · direct examination of the defendant", line: "A: “Everyone in the market says the plaintiff already forgave the debt.”", g: "HEARSAY",
+    why: "Offered for its truth (Rule 130, Sec. 37). Common reputation is an exception only for matters of public or general interest, marriage, and moral character (Sec. 43), not for a private debt." },
+  { ctx: "Illegal possession of firearms · direct examination of the arresting officer", line: "Q: “The gun was tucked in the accused's waistband, was it not?”", g: "LEADING",
+    why: "Leading on a material fact during direct examination (Rule 132, Sec. 10). Ask instead: “Where did you find the gun?”" },
+];
+const OBJ_ROUND = 12;
+const OBJ_SECS = [ [5, "5 seconds"], [10, "10 seconds"], [20, "20 seconds"], [0, "No time limit"] ];
+
+// Client intake. Facts are revealed only when a question uses one of their keywords (matched as word prefixes).
+// The answer key lives in "strategy"; "breach" marks choices that would be malpractice-level errors.
+const CASES = [
+  { id: "ud", title: "The stall on Rizal Street", subject: "Remedial Law · Ejectment", client: "Aling Rosa", budget: 10,
+    blurb: "A sari-sari store owner says her landlord wants her out.",
+    opening: "Attorney, magandang umaga po. Pinapaalis na po kami sa pwesto namin. Ano po ang gagawin ko?",
+    facts: [
+      { id: "lease", short: "One-year lease expired July 31; not renewed", critical: true, kw: ["lease", "kontrata", "contract", "upa", "renta", "rent", "kasunduan", "expire", "natapos"],
+        say: "May kontrata po kami, isang taon, nire-renew taon-taon. Natapos po noong July 31, tatlong buwan na. Hindi na po ni-renew ni Mr. Tan.",
+        note: "Possession was lawful by contract and became unlawful after the lease expired: the mark of unlawful detainer (Rule 70, Sec. 1)." },
+      { id: "demand", short: "Written demand to vacate received Oct. 15", critical: true, kw: ["demand", "sulat", "letter", "notice", "abiso", "pinapaalis", "umalis", "vacate"],
+        say: "Noong October 15 po, may dumating na sulat galing kay Mr. Tan. Umalis na raw po kami sa loob ng 15 araw.",
+        note: "Demand to vacate is a jurisdictional requirement. The lessee has 15 days (land) or 5 days (buildings) to comply (Rule 70, Sec. 2), and the one-year period to sue runs from the last demand." },
+      { id: "rent", short: "Landlord refused rent for Aug. and Sept.", critical: true, kw: ["bayad", "binayaran", "payment", "pay", "tinanggap", "accept", "hulog"],
+        say: "Sinubukan ko pong magbayad ng renta para sa August at September, pero ayaw na pong tanggapin ni Mr. Tan.",
+        note: "Had the lessor accepted rent for 15 days after expiry without contrary notice, an implied new lease would arise (Civil Code, Art. 1670). His refusal defeats that defense." },
+      { id: "brgy", short: "Both live in Brgy. San Roque; no barangay proceedings yet", critical: true, kw: ["barangay", "lupon", "kapitan", "tanod", "conciliation", "settle", "areglo", "usap", "nakatira", "address", "saan"],
+        say: "Hindi pa po kami nagpunta sa barangay. Pareho po kami ni Mr. Tan na taga-Barangay San Roque.",
+        note: "Parties in the same city must first go through barangay conciliation (Local Government Code, Secs. 408 and 412). A complaint without a certificate to file action is dismissible (Rule 70, Sec. 12)." },
+      { id: "years", short: "Eight years in the stall", critical: false, kw: ["gaano", "katagal", "ilang taon", "years", "matagal", "since", "simula"],
+        say: "Walong taon na po kami sa pwesto. Doon na po lumaki ang mga anak ko.",
+        note: "Long occupancy does not defeat ejectment, but it may justify asking for a reasonable period to vacate." },
+      { id: "case", short: "No summons yet; landlord threatens suit", critical: false, kw: ["kaso", "korte", "court", "summons", "case", "demanda", "idedemanda", "filed", "sumbong"],
+        say: "Wala pa po akong natatanggap na summons. Pero sabi po ni Mr. Tan, idedemanda na raw po niya kami.",
+        note: "No case yet, so there is time to prepare. Once summoned, the answer is due in 10 days." },
+      { id: "owner", short: "Landlord owns the building and holds title", critical: false, kw: ["may-ari", "owner", "titulo", "title", "kanino", "nagmamay-ari", "lupa"],
+        say: "Si Mr. Tan po ang may-ari ng building. May titulo po siya.",
+        note: "Rosa claims no ownership. Ejectment decides only physical possession (possession de facto)." },
+    ],
+    strategy: [
+      { q: "What action will Mr. Tan most likely file?", opts: ["Forcible entry", "Unlawful detainer", "Accion publiciana", "Accion reivindicatoria"], a: 1,
+        why: "Rosa's possession began lawfully under the lease and became unlawful when it expired and she did not vacate upon demand. Suit within one year of the last demand is unlawful detainer (Rule 70, Sec. 1). Forcible entry requires possession taken by force, intimidation, threat, strategy, or stealth." },
+      { q: "Which court has jurisdiction?", opts: ["Regional Trial Court", "Municipal or Metropolitan Trial Court", "The Lupong Tagapamayapa", "DHSUD"], a: 1, breach: [0],
+        why: "First-level courts have exclusive original jurisdiction over forcible entry and unlawful detainer, whatever the rentals or damages claimed (B.P. Blg. 129, Sec. 33(2)). The Lupon conciliates; it does not decide." },
+      { q: "Once served with summons, how long does Rosa have to answer?", opts: ["30 calendar days", "15 calendar days", "10 days", "5 days"], a: 2, breach: [0, 1],
+        why: "Rule 70, Sec. 6: answer within ten days from service of summons. If she fails, the court renders judgment on the facts alleged in the complaint (Sec. 7). Counting on a longer period is a malpractice-level error." },
+      { q: "Mr. Tan files tomorrow without going to the barangay. What should Rosa do?", opts: ["Move to dismiss for failure to undergo barangay conciliation", "Nothing for now: a motion to dismiss is a prohibited pleading in ejectment", "Nothing: barangay conciliation does not apply to ejectment", "File her own complaint before the Lupon"], a: 0,
+        why: "Motions to dismiss are prohibited in ejectment, with two exceptions: lack of jurisdiction over the subject matter and failure to comply with barangay conciliation (Rule 70, Sec. 13(1), with Sec. 12). Both parties live in the same barangay, so referral was required." },
+    ] },
+  { id: "loan", title: "The unpaid loan", subject: "Civil Law · Remedial Law", client: "Mang Ben", budget: 10,
+    blurb: "A retiree lent money to an old friend who has stopped answering.",
+    opening: "Attorney, may pinautang po ako sa kaibigan ko. Hanggang ngayon hindi pa po nagbabayad. Gusto ko na pong singilin.",
+    facts: [
+      { id: "amt", short: "Principal: ₱400,000", critical: true, kw: ["magkano", "halaga", "amount", "how much", "pera", "utang", "pinautang", "loan", "principal"],
+        say: "Apat na raang libo po, ₱400,000. Iyon po ang principal.",
+        note: "₱400,000 is within the ₱1,000,000 small-claims ceiling, exclusive of interest and costs." },
+      { id: "note", short: "Signed promissory note; Ben holds the original", critical: true, kw: ["papel", "pirma", "pumirma", "sign", "promissory", "note", "kasulatan", "written", "nakasulat", "resibo", "dokumento", "document", "kontrata", "contract"],
+        say: "Opo, may promissory note po siyang pinirmahan. Nasa akin po ang original.",
+        note: "An action on a written contract prescribes in ten years (Civil Code, Art. 1144). The original note is the key exhibit." },
+      { id: "due", short: "Due March 2024", critical: true, kw: ["kailan", "due", "takdang", "bayaran", "maturity", "date", "petsa", "when", "deadline"],
+        say: "Dapat po bayad na siya noong March 2024. Mag-dalawang taon na po.",
+        note: "Ten years from March 2024: the claim has not prescribed." },
+      { id: "int", short: "3% monthly interest agreed orally, not in the note", critical: true, kw: ["interes", "interest", "tubo", "porsyento", "percent"],
+        say: "Napag-usapan po namin na 3% kada buwan. Pero hindi po nakasulat sa note, verbal lang.",
+        note: "No interest is due unless expressly stipulated in writing (Civil Code, Art. 1956). Only legal interest as damages may be recovered." },
+      { id: "dem", short: "Demand letter received August 2026 (registry return card)", critical: true, kw: ["singil", "siningil", "demand", "sinulatan", "letter", "sulat", "notice", "hiningi"],
+        say: "Pinadalhan ko po siya ng demand letter noong August 2026. Natanggap po niya; may pirma sa registry return card.",
+        note: "Extrajudicial demand puts the debtor in delay (Art. 1169), starts legal interest, and interrupts prescription (Art. 1155)." },
+      { id: "res", short: "Ben in Quezon City; debtor in Davao City", critical: true, kw: ["nakatira", "tirahan", "address", "saan", "live", "reside", "barangay", "lugar", "where"],
+        say: "Ako po taga-Quezon City. Siya po nasa Davao City na nakatira ngayon.",
+        note: "Parties residing in non-adjoining cities need not undergo barangay conciliation (Local Government Code, Sec. 408)." },
+      { id: "rel", short: "High school friend; not related", critical: false, kw: ["kaibigan", "friend", "kamag-anak", "relative", "kilala", "sino", "who"],
+        say: "Kaibigan ko po siya mula high school. Hindi po kami magkamag-anak.",
+        note: "No family relationship, so the earnest-efforts-to-compromise requirement for suits between family members (Civil Code, Art. 151) does not arise." },
+      { id: "col", short: "No collateral or guarantor", critical: false, kw: ["collateral", "sangla", "mortgage", "guarantor", "garantiya", "security"],
+        say: "Wala pong collateral, wala ring guarantor.",
+        note: "An unsecured personal loan: the remedy is a plain collection action." },
+    ],
+    strategy: [
+      { q: "Where and under what procedure should Ben sue?", opts: ["RTC, ordinary civil action", "MTC, regular procedure", "MTC, small claims", "The Lupon first, then the MTC"], a: 2, breach: [0],
+        why: "Money claims not exceeding ₱1,000,000, exclusive of interest and costs, go to small claims in first-level courts (A.M. No. 08-8-7-SC, as amended). Filing in the RTC is a jurisdictional error: first-level courts hold demands up to ₱2,000,000 (B.P. Blg. 129, as amended by R.A. No. 11576)." },
+      { q: "Must Ben first go through barangay conciliation?", opts: ["Yes, for every money claim", "No: the parties reside in non-adjoining cities", "Yes, because the debtor is a friend", "No: small claims are always exempt"], a: 1,
+        why: "Sec. 408 of the Local Government Code exempts disputes between parties who actually reside in barangays of different cities or municipalities, unless those barangays adjoin and the parties agree to settle there. Quezon City and Davao City do not adjoin." },
+      { q: "What interest can Ben recover?", opts: ["3% per month, as agreed", "6% per annum from the due date", "6% per annum from extrajudicial demand", "None at all"], a: 2,
+        why: "The 3% monthly rate was never put in writing, so it is not due (Art. 1956). Legal interest of 6% per annum runs as damages from demand (Arts. 1169 and 2209; Nacar v. Gallery Frames, G.R. No. 189871, 2013)." },
+      { q: "Has the action prescribed?", opts: ["Yes: six years, oral contract", "No: ten years, written contract", "Yes: four years", "No: collection suits never prescribe"], a: 1,
+        why: "An action upon a written contract prescribes in ten years (Civil Code, Art. 1144). The note fell due in March 2024, and the written demand also interrupted prescription (Art. 1155)." },
+      { q: "Who appears for Ben at the hearing?", opts: ["You, as his counsel", "Ben himself; lawyers may not appear for a party", "A paralegal from your office", "Any representative, even without written authority"], a: 1,
+        why: "In small claims, no attorney may appear on behalf of or represent a party at the hearing, unless the attorney is the plaintiff or defendant (A.M. No. 08-8-7-SC, as amended). You may still advise Ben and help prepare his Statement of Claim." },
+    ] },
+  { id: "dismissal", title: "The cashier sent home", subject: "Labor Law", client: "Jessa", budget: 10,
+    blurb: "A grocery cashier was told not to come back. No papers, no hearing.",
+    opening: "Attorney, tinanggal na po ako sa trabaho. Wala po akong ginawang masama. May magagawa pa po ba ako?",
+    facts: [
+      { id: "ten", short: "Cashier for 3 years; regular since 2024", critical: true, kw: ["gaano", "katagal", "ilang taon", "years", "regular", "status", "nagsimula", "simula", "position", "posisyon", "trabaho"],
+        say: "Tatlong taon na po akong cashier sa grocery. Regular na po ako mula 2024.",
+        note: "A regular employee has security of tenure: dismissal only for a just or authorized cause, after due process (Labor Code, Art. 294)." },
+      { id: "how", short: "Told verbally on Oct. 10 not to report", critical: true, kw: ["paano", "how", "sinabi", "told", "tinanggal", "fired", "dismiss", "kailan", "when", "nangyari"],
+        say: "Noong October 10 po, sinabihan lang ako ng manager: “Huwag ka nang pumasok bukas.” Iyon lang po.",
+        note: "A verbal termination effective at once points to dismissal without procedural due process." },
+      { id: "nte", short: "No written notice of any kind", critical: true, kw: ["notice", "sulat", "memo", "letter", "written", "abiso", "nte"],
+        say: "Wala po akong natanggap na kahit anong sulat o memo.",
+        note: "The employer must serve a first written notice of the specific charges and a second written notice of the decision (King of Kings Transport v. Mamac, G.R. No. 166208, 2007)." },
+      { id: "hear", short: "Never asked to explain", critical: true, kw: ["hearing", "explain", "paliwanag", "pagkakataon", "chance", "depensa", "side", "conference", "tinanong"],
+        say: "Hindi po ako tinanong o pinag-explain man lang.",
+        note: "The employee must get at least five calendar days to answer the charges and an ample opportunity to be heard (King of Kings Transport)." },
+      { id: "why", short: "₱8,000 shortage on Oct. 8; register shared", critical: true, kw: ["bakit", "why", "reason", "dahilan", "shortage", "kulang", "nawala", "akusa", "kasalanan"],
+        say: "May ₱8,000 daw pong kulang sa kaha noong October 8. Pero hindi lang po ako ang humahawak ng kaha noong araw na iyon.",
+        note: "The employer must prove a just cause (Labor Code, Art. 292(b)). A shortage on a shared register, with no showing of who caused it, is weak proof." },
+      { id: "res", short: "Asked to sign a resignation letter; refused", critical: true, kw: ["resign", "pirma", "pumirma", "sign", "quitclaim", "papel", "pinapirma", "pinapipirma"],
+        say: "Pinapipirma po nila ako ng resignation letter, pero hindi ko po pinirmahan.",
+        note: "With no signed resignation, the employer cannot claim she left voluntarily." },
+      { id: "pay", short: "Last salary and 13th month pay withheld", critical: false, kw: ["sweldo", "sahod", "pay", "salary", "final", "back pay", "13th", "bayad"],
+        say: "Hindi pa po binibigay ang huling sweldo ko at ang 13th month.",
+        note: "Join the money claims. Final pay should be released within 30 days from separation (DOLE Labor Advisory No. 06, s. 2020)." },
+      { id: "size", short: "About 40 employees", critical: false, kw: ["ilan", "empleyado", "kumpanya", "company", "employer", "grocery", "branch"],
+        say: "Mga 40 po kaming empleyado sa grocery na iyon.",
+        note: "Size matters little here, but helps if you later argue that reinstatement is still viable." },
+    ],
+    strategy: [
+      { q: "Where does Jessa's complaint go first?", opts: ["Regional Trial Court", "DOLE Regional Director, for inspection", "Request for Assistance under SEnA, then the Labor Arbiter if unsettled", "Court of Appeals"], a: 2, breach: [0, 3],
+        why: "Termination disputes fall under the original and exclusive jurisdiction of Labor Arbiters (Labor Code, Art. 224(a)(2)). Labor disputes first go through 30-day mandatory conciliation-mediation under the Single Entry Approach (R.A. No. 10396)." },
+      { q: "What is the prescriptive period for the illegal dismissal claim?", opts: ["Three years, like money claims", "Four years, as an injury to rights", "One year", "Six months"], a: 1,
+        why: "Illegal dismissal is an injury to rights, which prescribes in four years (Civil Code, Art. 1146; Callanta v. Carnation Philippines, G.R. No. 70615, 1986). Her money claims prescribe in three years (Labor Code, Art. 306)." },
+      { q: "Who must prove that the dismissal was for a just cause?", opts: ["Jessa, by substantial evidence", "The employer", "Whoever files first", "No one; the Labor Arbiter decides on the pleadings"], a: 1,
+        why: "The burden of proving that a termination was for a valid or authorized cause rests on the employer (Labor Code, Art. 292(b)). Failure to discharge it makes the dismissal illegal." },
+      { q: "Suppose the employer proves the shortage was her fault but skipped the notices. What result?", opts: ["Dismissal void; reinstatement with full backwages", "Dismissal valid, but the employer pays nominal damages", "Dismissal valid, with no liability at all", "Separation pay only"], a: 1,
+        why: "When a just cause exists but procedural due process was not observed, the dismissal stands but the employer pays nominal damages, ₱30,000 for a just cause (Agabon v. NLRC, G.R. No. 158693, 2004)." },
+      { q: "If no just cause is proved, what reliefs should you claim?", opts: ["Separation pay only", "Reinstatement without loss of seniority, full backwages, and her unpaid wages and 13th month pay", "Moral damages only", "Reinstatement with three months' backwages"], a: 1,
+        why: "Art. 294: reinstatement without loss of seniority rights and full backwages from the time compensation was withheld until actual reinstatement. Add the money claims. Moral and exemplary damages need proof of bad faith or oppressive conduct." },
+    ] },
+];
+const CLIENT_SHRUG = [
+  "Ano po ulit, Attorney? Hindi ko po masyadong naintindihan.",
+  "Hindi ko po alam kung paano sasagutin iyan. Ano po ang gusto n'yong malaman?",
+  "Pasensya na po, Attorney. Puwede n'yo po bang itanong nang mas tiyak?",
+];
+const BANDS = [ [85, "Excellent"], [70, "Good"], [55, "Satisfactory"], [40, "Borderline"], [0, "Clear fail"] ];
+
 const DURATIONS = [ [240, "4 hours (actual Bar)"], [120, "2 hours"], [60, "1 hour"], [30, "30 minutes"], [15, "15 minutes"] ];
 const STORE = "bar-sim-v1";
 const PASS = 75;
 
 let S = load() || { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null };
+S.drills ??= { obj: null, intake: {} };
+S.objSecs ??= 10;
+if (S.obj) S.obj.itemEnd = Date.now() + S.obj.secs * 1000;
 let tick = null, grader = null, confirmSubmit = false;
 
 function load() { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } }
@@ -195,6 +425,8 @@ function render() {
   clearInterval(tick);
   if (S.view === "exam" && S.exam) return renderExam();
   if (S.view === "report" && S.report) return renderReport();
+  if (S.view === "objection" && S.obj) return renderObj();
+  if (S.view === "intake" && S.intake) return renderIntake();
   renderBoard();
 }
 
@@ -228,6 +460,7 @@ function renderBoard() {
     ${Object.keys(S.scores).length ? `<button id="reset">Clear scorecard</button>` : ""}
   </section>
 
+  <div class="sect"><h2>Written examination</h2><span class="small muted">Essay booklets, graded by Claude or by you</span></div>
   <div class="grid">
     ${SUBJECTS.map(s => {
       const sc = S.scores[s.id];
@@ -243,6 +476,33 @@ function renderBoard() {
       </article>`;
     }).join("")}
   </div>
+
+  <div class="sect"><h2>Practice drills</h2><span class="small muted">Graded against a fixed answer key</span></div>
+  <div class="grid">
+    <article class="subj drill">
+      <div class="top"><span class="label">Trial · Rules 128–132</span><span class="weight">${OBJ.length}</span></div>
+      <h3>Objection drill</h3>
+      <p class="small muted">A line is asked in open court. Name the ground before the witness answers. ${OBJ_ROUND} lines a round.</p>
+      <label class="small" for="osecs">Time per line
+        <select id="osecs">${OBJ_SECS.map(([v, l]) => `<option value="${v}" ${v == S.objSecs ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+      <div class="foot">
+        ${S.drills.obj ? `<span class="pill ${S.drills.obj.best >= PASS ? "good" : "warn"}">Best ${S.drills.obj.best}%</span>` : `<span class="pill idle">Not taken</span>`}
+        <button class="primary" id="ostart">Begin</button>
+      </div>
+    </article>
+    ${CASES.map(c => {
+      const b = S.drills.intake[c.id];
+      return `<article class="subj drill">
+        <div class="top"><span class="label">Client intake · ${esc(c.subject)}</span></div>
+        <h3>${esc(c.title)}</h3>
+        <p class="small muted">${esc(c.blurb)} ${c.budget} questions to get the facts, then choose the remedy and forum.</p>
+        <div class="foot">
+          ${b == null ? `<span class="pill idle">Not taken</span>` : `<span class="pill ${b >= 70 ? "good" : "warn"}">Best ${b}%</span>`}
+          <button class="primary" data-intake="${c.id}">${b == null ? "Meet client" : "Again"}</button>
+        </div>
+      </article>`;
+    }).join("")}
+  </div>
   <p class="small muted" style="margin-top:22px">Questions are original practice problems, not past Bar questions. Answers save in this browser as you write. Verify every cited rule against the current text before relying on it.</p>`;
 
   $("#dur").onchange = e => { S.duration = +e.target.value; save(); };
@@ -253,6 +513,9 @@ function renderBoard() {
     else { r.dataset.armed = 1; r.textContent = "Click again to clear"; }
   };
   app.querySelectorAll("[data-start]").forEach(b => b.onclick = () => startExam(b.dataset.start));
+  $("#osecs").onchange = e => { S.objSecs = +e.target.value; save(); };
+  $("#ostart").onclick = startObj;
+  app.querySelectorAll("[data-intake]").forEach(b => b.onclick = () => startIntake(b.dataset.intake));
 }
 
 function startExam(id) {
@@ -452,6 +715,244 @@ Reply with only a JSON object:
     if (msg == null) { el.innerHTML = ""; $("#bulk") && ($("#bulk").innerHTML = ""); return false; }
     btn.disabled = false; note.textContent = e?.code === "cancelled" ? "" : msg; return false;
   }
+}
+
+/* ---------- Objection drill ---------- */
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const home = () => { S.view = "board"; save(); render(); window.scrollTo(0, 0); };
+
+function startObj() {
+  S.obj = { order: shuffle(OBJ.map((_, i) => i)).slice(0, OBJ_ROUND), idx: 0, picks: [], secs: S.objSecs, itemEnd: 0 };
+  S.obj.itemEnd = Date.now() + S.obj.secs * 1000;
+  S.view = "objection"; save(); render(); window.scrollTo(0, 0);
+}
+
+function renderObj() {
+  const O = S.obj;
+  if (O.idx >= O.order.length) return renderObjResult();
+  const it = OBJ[O.order[O.idx]], pick = O.picks[O.idx], answered = pick !== undefined;
+  const right = O.picks.filter((p, k) => p === OBJ[O.order[k]].g).length;
+  app.innerHTML = `
+  <div class="examhead">
+    <div style="min-width:0"><p class="label">Objection drill · line ${O.idx + 1} of ${O.order.length}</p><h2>${right} correct</h2></div>
+    <button id="quit">Quit</button>
+  </div>
+  <section style="display:flex;flex-direction:column;gap:16px;margin-top:18px">
+    <p class="label">${esc(it.ctx)}</p>
+    <p class="trial">${esc(it.line)}</p>
+    ${O.secs && !answered ? `<div class="clock" aria-hidden="true"><i id="clk" style="width:100%"></i></div>` : ""}
+    <div class="opts" role="group" aria-label="Grounds">
+      ${Object.entries(GROUNDS).map(([k, l]) => {
+        const cls = !answered ? "" : k === it.g ? "right" : k === pick ? "wrong" : "";
+        return `<button data-g="${k}" class="${cls}" ${answered ? "disabled" : ""}>${esc(l)}</button>`;
+      }).join("")}
+    </div>
+    ${answered ? `<div class="grade">
+        <p class="verdict ${pick === it.g ? "ok" : "no"}">${pick === it.g ? (it.g === "NONE" ? "Correct. Let it in." : "Sustained.") : pick === "TIMEOUT" ? `Too slow. The witness has answered. Ground: ${esc(GROUNDS[it.g])}.` : `Not quite. ${it.g === "NONE" ? "No valid objection here." : "Ground: " + esc(GROUNDS[it.g]) + "."}`}</p>
+        <p>${esc(it.why)}</p>
+      </div>
+      <div class="row" style="justify-content:flex-end"><button class="primary" id="next">${O.idx + 1 < O.order.length ? "Next line" : "See results"}</button></div>` : ""}
+  </section>`;
+
+  $("#quit").onclick = () => { S.obj = null; home(); };
+  const answer = g => { O.picks[O.idx] = g; save(); render(); };
+  app.querySelectorAll("[data-g]").forEach(b => b.onclick = () => answer(b.dataset.g));
+  if (answered) {
+    const n = $("#next"); n.focus();
+    n.onclick = () => {
+      O.idx++; O.itemEnd = Date.now() + O.secs * 1000;
+      if (O.idx >= O.order.length) {
+        const pct = Math.round(O.picks.filter((p, k) => p === OBJ[O.order[k]].g).length / O.order.length * 100);
+        const prev = S.drills.obj;
+        S.drills.obj = { best: Math.max(pct, prev?.best ?? 0), runs: (prev?.runs ?? 0) + 1, last: pct };
+      }
+      save(); render(); window.scrollTo(0, 0);
+    };
+  } else if (O.secs) {
+    const clk = $("#clk");
+    tick = setInterval(() => {
+      const left = O.itemEnd - Date.now();
+      clk.style.width = Math.max(0, left / (O.secs * 10)) + "%";
+      // Silence on a proper line is the right call; silence on an objectionable one waives the objection.
+      if (left <= 0) { clearInterval(tick); answer(it.g === "NONE" ? "NONE" : "TIMEOUT"); }
+    }, 100);
+  }
+}
+
+function renderObjResult() {
+  const O = S.obj, items = O.order.map(i => OBJ[i]);
+  const right = items.filter((it, k) => O.picks[k] === it.g).length, pct = Math.round(right / items.length * 100);
+  app.innerHTML = `
+  <header class="mast">
+    <div><p class="label">Objection drill · ${O.secs ? O.secs + " seconds a line" : "untimed"}</p><h1>${right} of ${items.length} correct</h1>
+      <p class="muted small">Best ${S.drills.obj.best}% over ${S.drills.obj.runs} round${S.drills.obj.runs > 1 ? "s" : ""}. Object as soon as the ground becomes reasonably apparent (Rule 132), and state the specific ground.</p></div>
+    <div class="row"><button id="back">Back to subjects</button><button class="primary" id="again">Another round</button></div>
+  </header>
+  <section class="panel card-score">
+    <div class="big" style="color:${pct >= PASS ? "var(--good)" : "var(--bad)"}">${pct}%</div>
+    <div class="bar" aria-hidden="true"><i style="width:${pct}%"></i><b></b></div>
+  </section>
+  ${items.map((it, k) => {
+    const p = O.picks[k], ok = p === it.g;
+    return `<article class="qres">
+      <div class="hd"><span class="label">${esc(it.ctx)}</span><span class="pill ${ok ? "good" : "bad"}">${ok ? "Correct" : p === "TIMEOUT" ? "Timed out" : "Missed"}</span></div>
+      <p class="trial" style="font-size:1.02rem">${esc(it.line)}</p>
+      <p class="small">${ok ? "" : `You said <strong>${p === "TIMEOUT" ? "nothing" : esc(GROUNDS[p])}</strong>. `}Answer: <strong>${esc(GROUNDS[it.g])}</strong>. ${esc(it.why)}</p>
+    </article>`;
+  }).join("")}`;
+  $("#back").onclick = () => { S.obj = null; home(); };
+  $("#again").onclick = startObj;
+}
+
+/* ---------- Client intake ---------- */
+const caseOf = id => CASES.find(c => c.id === id);
+
+function startIntake(id) {
+  S.intake = { id, asked: [], revealed: [], picks: [], stage: "interview" };
+  S.view = "intake"; save(); render(); window.scrollTo(0, 0);
+}
+
+// Keywords match as word prefixes, so "bayad" hits "bayaran" but "ilan" does not hit "kailan".
+function matchFact(C, I, q) {
+  const t = " " + q.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, " ").replace(/\s+/g, " ") + " ";
+  const hits = f => f.kw.filter(k => t.includes(" " + k)).length;
+  const rank = list => list.map(f => [f, hits(f)]).filter(([, h]) => h).sort((a, b) => b[1] - a[1])[0]?.[0];
+  return rank(C.facts.filter(f => !I.revealed.includes(f.id))) || rank(C.facts.filter(f => I.revealed.includes(f.id)));
+}
+
+function intakeResult(C, I) {
+  const crit = C.facts.filter(f => f.critical), found = crit.filter(f => I.revealed.includes(f.id)).length;
+  const right = C.strategy.filter((s, k) => I.picks[k] === s.a).length;
+  const pct = Math.round(found / crit.length * 40 + right / C.strategy.length * 60);
+  const breaches = C.strategy.filter((s, k) => s.breach?.includes(I.picks[k]));
+  let band = BANDS.find(([min]) => pct >= min)[1];
+  if (breaches.length && pct >= 55) band = "Borderline";
+  return { pct, band, breaches, found, crit: crit.length, right };
+}
+
+function renderIntake() {
+  const I = S.intake, C = caseOf(I.id);
+  if (I.stage === "strategy") return renderStrategy(C, I);
+  if (I.stage === "debrief") return renderDebrief(C, I);
+  const left = C.budget - I.asked.length;
+  app.innerHTML = `
+  <div class="examhead">
+    <div style="min-width:0"><p class="label">Client intake · ${esc(C.subject)}</p><h2>${esc(C.title)}</h2></div>
+    <div class="row"><span class="timer">${left} left</span><button id="quit">Quit</button></div>
+  </div>
+  <div class="split" style="margin-top:18px">
+    <section class="panel">
+      <div class="chat" id="chat">
+        <p class="msg who">${esc(C.client)}</p><p class="msg">${esc(C.opening)}</p>
+        ${I.asked.map(a => `<p class="msg me">${esc(a.q)}</p><p class="msg">${esc(a.reply)}</p>`).join("")}
+      </div>
+      <form class="ask" id="askf">
+        <input type="text" id="q" autocomplete="off" placeholder="${left ? "Ask in English or Tagalog…" : "Your consultation time is up."}" ${left ? "" : "disabled"} aria-label="Your question">
+        <button class="primary" ${left ? "" : "disabled"}>Ask</button>
+      </form>
+      <p class="small muted" style="margin-top:8px">The client answers only what you ask, one fact at a time. Ask about dates, documents, payments, where the parties live, and what has been filed.</p>
+    </section>
+    <aside class="panel" style="display:flex;flex-direction:column;gap:12px">
+      <p class="label">Your notes</p>
+      ${I.revealed.length ? `<ul class="notes">${I.revealed.map(id => `<li>${esc(C.facts.find(f => f.id === id).short)}</li>`).join("")}</ul>` : `<p class="small muted">Nothing yet.</p>`}
+      <button class="primary" id="tostrat">Done interviewing</button>
+    </aside>
+  </div>`;
+
+  const chat = $("#chat"); chat.scrollTop = chat.scrollHeight;
+  $("#quit").onclick = () => { S.intake = null; home(); };
+  $("#tostrat").onclick = () => { I.stage = "strategy"; save(); render(); window.scrollTo(0, 0); };
+  $("#askf").onsubmit = e => {
+    e.preventDefault();
+    const q = $("#q").value.trim();
+    if (!q || I.asked.length >= C.budget) return;
+    const f = matchFact(C, I, q);
+    let reply;
+    if (!f) reply = CLIENT_SHRUG[I.asked.length % CLIENT_SHRUG.length];
+    else if (I.revealed.includes(f.id)) reply = "Nasabi ko na po, Attorney: " + f.say;
+    else { reply = f.say; I.revealed.push(f.id); }
+    I.asked.push({ q, reply });
+    save(); render();
+    $("#q")?.focus();
+  };
+}
+
+function renderStrategy(C, I) {
+  app.innerHTML = `
+  <header class="mast">
+    <div><p class="label">Client intake · strategy</p><h1>${esc(C.title)}</h1>
+      <p class="muted small">You learned ${I.revealed.length} of ${C.facts.length} facts. Choose the course of action.</p></div>
+    <button id="quit">Quit</button>
+  </header>
+  <div class="split">
+    <section style="display:flex;flex-direction:column;gap:22px">
+      ${C.strategy.map((s, k) => `<div style="display:flex;flex-direction:column;gap:10px">
+        <h3>${k + 1}. ${esc(s.q)}</h3>
+        <div class="opts" role="group">${s.opts.map((o, j) => `<button data-k="${k}" data-j="${j}" class="${I.picks[k] === j ? "on" : ""}">${esc(o)}</button>`).join("")}</div>
+      </div>`).join("")}
+      <div class="row" style="justify-content:flex-end"><button class="primary" id="advise">Advise the client</button></div>
+    </section>
+    <aside class="panel" style="display:flex;flex-direction:column;gap:12px">
+      <p class="label">Your notes</p>
+      ${I.revealed.length ? `<ul class="notes">${I.revealed.map(id => `<li>${esc(C.facts.find(f => f.id === id).short)}</li>`).join("")}</ul>` : `<p class="small muted">You learned nothing from the client.</p>`}
+    </aside>
+  </div>`;
+
+  const adv = $("#advise");
+  const ready = () => { adv.disabled = C.strategy.some((_, k) => I.picks[k] == null); };
+  ready();
+  $("#quit").onclick = () => { S.intake = null; home(); };
+  app.querySelectorAll("[data-k]").forEach(b => b.onclick = () => {
+    const k = +b.dataset.k; I.picks[k] = +b.dataset.j; save();
+    app.querySelectorAll(`[data-k="${k}"]`).forEach(x => x.classList.toggle("on", x === b));
+    ready();
+  });
+  adv.onclick = () => {
+    I.stage = "debrief";
+    S.drills.intake[C.id] = Math.max(intakeResult(C, I).pct, S.drills.intake[C.id] ?? 0);
+    save(); render(); window.scrollTo(0, 0);
+  };
+}
+
+function renderDebrief(C, I) {
+  const R = intakeResult(C, I);
+  const col = R.band === "Excellent" || R.band === "Good" ? "var(--good)" : R.band === "Satisfactory" ? "var(--warn)" : "var(--bad)";
+  app.innerHTML = `
+  <header class="mast">
+    <div><p class="label">Debrief · ${esc(C.subject)}</p><h1>${esc(C.title)}</h1>
+      <p class="muted small">Facts ${R.found} of ${R.crit} critical (40%) · Strategy ${R.right} of ${C.strategy.length} (60%)</p></div>
+    <div class="row"><button id="back">Back to subjects</button><button class="primary" id="again">Interview again</button></div>
+  </header>
+  ${R.breaches.length ? `<p class="breach" style="margin-bottom:18px">Malpractice-level error: ${R.breaches.map(s => esc(s.q)).join(" ")} Your rating is capped at Borderline.</p>` : ""}
+  <section class="panel card-score">
+    <div class="big" style="color:${col}">${R.pct}%</div>
+    <div style="display:flex;flex-direction:column;gap:8px"><p><strong>${R.band}</strong></p>
+      <p class="small muted">Excellent ≥ 85 · Good ≥ 70 · Satisfactory ≥ 55 · Borderline ≥ 40</p></div>
+  </section>
+
+  <div class="sect"><h2>Strategy</h2></div>
+  ${C.strategy.map((s, k) => {
+    const p = I.picks[k], ok = p === s.a;
+    return `<article class="qres">
+      <div class="hd"><h3>${esc(s.q)}</h3><span class="pill ${ok ? "good" : s.breach?.includes(p) ? "bad" : "warn"}">${ok ? "Correct" : s.breach?.includes(p) ? "Breach" : "Wrong"}</span></div>
+      <p class="small">${ok ? "" : `You chose <strong>${esc(s.opts[p])}</strong>. `}Answer: <strong>${esc(s.opts[s.a])}</strong>.</p>
+      <p class="small">${esc(s.why)}</p>
+    </article>`;
+  }).join("")}
+
+  <div class="sect"><h2>Facts</h2></div>
+  ${C.facts.map(f => {
+    const got = I.revealed.includes(f.id);
+    return `<article class="qres">
+      <div class="hd"><h3>${esc(f.short)}</h3><span class="pill ${got ? "good" : f.critical ? "bad" : "idle"}">${got ? "Elicited" : f.critical ? "Missed · critical" : "Missed"}</span></div>
+      ${got ? "" : `<p class="small muted">The client would have said: “${esc(f.say)}”</p>`}
+      <p class="small">${esc(f.note)}</p>
+    </article>`;
+  }).join("")}
+  <p class="small muted" style="margin-top:22px">Practice cases, not legal advice. Verify each rule against the official text before relying on it.</p>`;
+
+  $("#back").onclick = () => { S.intake = null; home(); };
+  $("#again").onclick = () => startIntake(C.id);
 }
 
 render();
