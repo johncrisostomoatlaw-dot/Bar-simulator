@@ -1372,9 +1372,15 @@ const COUNTS = [3, 5, 8, 10];
 // "Track" values in the PH Bar Question Repository.
 const TRACKS = { all: "All tracks", "T1-ACTUAL": "T1 · Actual Bar questions", "T2-LANDMARK": "T2 · Landmark cases",
   "T3-BARCHAIR": "T3 · Bar Chair-linked", "T4-TWISTED": "T4 · Twisted facts", "T5-SYLLABUS": "T5 · Syllabus hypotheticals" };
+// Topic drills over the repository. A topic narrows one subject by its syllabus Sub-topic; Notion search has no
+// property filter, so several keyword searches gather candidates and the Sub-topic test decides.
+const TOPICS = {
+  insurance: { label: "Commercial · Insurance Law (QuAMTO)", subject: "comtax", part: /^II\./, book: "QuAMTO",
+    queries: ["insurance", "insurable interest", "insurer", "insured", "policy", "premium", "double insurance", "concealment", "beneficiary", "QuAMTO insurance"] },
+};
 
 let S = { view: "board", duration: 60, strict: true, exam: null, scores: {}, report: null,
-  mode: "bar", logNotion: true, source: "builtin", track: "all", history: [], count: 5, includeReview: false, ...(load() || {}) };
+  mode: "bar", logNotion: true, source: "builtin", track: "all", topic: "all", history: [], count: 5, includeReview: false, ...(load() || {}) };
 let mcp, mcpReady = window.claude?.use ? window.claude.use("mcp").catch(() => null).then(m => (mcp = m)) : Promise.resolve(null);
 let loading = null, sourceNote = "";
 let tick = null, grader = null, confirmSubmit = false;
@@ -1436,6 +1442,8 @@ function renderBoard() {
     </label>
     ${S.source === "notion" ? `<label for="track">Track
       <select id="track">${Object.entries(TRACKS).map(([v, l]) => `<option value="${v}" ${S.track === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label for="topic">Topic
+      <select id="topic"><option value="all">All topics</option>${Object.entries(TOPICS).map(([v, t]) => `<option value="${v}" ${S.topic === v ? "selected" : ""}>${t.label}</option>`).join("")}</select></label>
     <label for="cnt">Questions per subject
       <select id="cnt">${COUNTS.map(n => `<option ${n == S.count ? "selected" : ""}>${n}</option>`).join("")}</select></label>
     <label class="check" for="rev"><input type="checkbox" id="rev" ${S.includeReview ? "checked" : ""}> Include “Needs Review” rows</label>` : ""}
@@ -1467,6 +1475,7 @@ function renderBoard() {
   $("#dur").onchange = e => { S.duration = +e.target.value; save(); };
   $("#src").onchange = e => { S.source = e.target.value; sourceNote = ""; save(); render(); };
   if ($("#track")) $("#track").onchange = e => { S.track = e.target.value; save(); render(); };
+  if ($("#topic")) $("#topic").onchange = e => { S.topic = e.target.value; sourceNote = ""; save(); render(); };
   if ($("#cnt")) $("#cnt").onchange = e => { S.count = +e.target.value; save(); render(); };
   if ($("#rev")) $("#rev").onchange = e => { S.includeReview = e.target.checked; save(); render(); };
   $("#lognotion").onchange = e => { S.logNotion = e.target.checked; save(); };
@@ -1488,7 +1497,9 @@ async function startExam(id) {
     loading = null;
   }
   const review = S.mode === "review";
-  S.exam = { subject: id, qs, mode: review ? "review" : "bar", idx: 0, answers: qs.map(() => ""), flags: qs.map(() => false),
+  // A topic drill is tagged so it is not recorded as a full-subject score.
+  const topic = S.source === "notion" && TOPICS[S.topic]?.subject === id && qs.every(q => q.src) ? S.topic : null;
+  S.exam = { subject: id, topic, qs, mode: review ? "review" : "bar", idx: 0, answers: qs.map(() => ""), flags: qs.map(() => false),
     checked: qs.map(() => null), startedAt: Date.now(), endAt: review ? null : Date.now() + S.duration * 60000,
     minutes: review ? null : S.duration, strict: S.strict, tabSwitches: 0 };
   S.view = "exam"; confirmSubmit = false; save(); render(); window.scrollTo(0, 0);
@@ -1520,13 +1531,13 @@ function registryBlock(q, key) {
   return `<div class="reg"><p class="label">Cases</p>
     ${q.cases?.length ? `<ul>${q.cases.map(c => `<li><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a> <span class="pill ${c.src === "registry" || !c.src ? "good" : "idle"}">${c.src === "lawphil" ? "Lawphil" : c.src === "external" ? esc(c.label) : "Your registry"}</span></li>`).join("")}</ul>`
       : q.src ? "" : `<p class="small muted">${esc(q.noCases || "No registry case matched this question at 75% confidence.")}</p>`}
-    ${q.caseNote ? `<p class="small muted">${esc(q.caseNote)}</p>` : ""}
+    ${q.caseNote ? `<p class="small muted" style="white-space:pre-line">${esc(q.caseNote)}</p>` : ""}
     ${q.kw ? `<div class="row small"><button data-reg="${key}">Search registry</button><span class="muted">Loose keyword match: “${esc(q.kw)}”. Check each result yourself.</span></div><ul class="small" id="regres-${key}"></ul>` : ""}
   </div>`;
 }
 
 function noteBlock(q) {
-  return `<details><summary>${q.src ? "Model answer from Notion" : q.keyLabel || "Examiner's note"}</summary><p class="key">${esc(q.key)}</p>${q.src ? `<p class="small"><a href="${esc(q.src.url)}" target="_blank" rel="noopener">Open in Notion</a></p>` : ""}</details>`;
+  return `<details><summary>${q.keyLabel ? q.keyLabel + (q.src ? " (from Notion)" : "") : q.src ? "Model answer from Notion" : "Examiner's note"}</summary><p class="key">${esc(q.key)}</p>${q.src ? `<p class="small"><a href="${esc(q.src.url)}" target="_blank" rel="noopener">Open in Notion</a></p>` : ""}</details>`;
 }
 
 function wireRegistry(qs) {
@@ -1648,7 +1659,7 @@ document.addEventListener("visibilitychange", () => {
 function finishExam() {
   clearInterval(tick);
   const E = S.exam, review = E.mode === "review";
-  S.report = { subject: E.subject, qs: E.qs || BANK[E.subject], mode: E.mode || "bar", answers: E.answers, tabSwitches: E.tabSwitches, minutes: E.minutes,
+  S.report = { subject: E.subject, topic: E.topic || null, qs: E.qs || BANK[E.subject], mode: E.mode || "bar", answers: E.answers, tabSwitches: E.tabSwitches, minutes: E.minutes,
     usedMs: review ? Date.now() - E.startedAt : Math.min(E.minutes * 60000, Date.now() - (E.endAt - E.minutes * 60000)),
     grades: review ? E.checked.slice() : E.answers.map(() => null) };
   S.exam = null; S.view = "report"; confirmSubmit = false; checkNote = ""; postScore(); save(); render(); window.scrollTo(0, 0);
@@ -1734,7 +1745,7 @@ async function searchRegistry(q, btn, out) {
 
 function postScore() {
   const t = reportTotal();
-  if (t != null && S.report.mode !== "review") S.scores[S.report.subject] = Math.round(t * 10) / 10;
+  if (t != null && S.report.mode !== "review" && !S.report.topic) S.scores[S.report.subject] = Math.round(t * 10) / 10;
 }
 
 /* ---------- Notion source (mcp capability) ---------- */
@@ -1754,18 +1765,36 @@ function parseNotionPage(p) {
   const body = (text.match(/<content>([\s\S]*?)<\/content>/) || [])[1] || "";
   const strip = t => t.replace(/<empty-block\/>/g, "").replace(/<\/?(summary|details)[^>]*>/g, "")
     .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, "$1").replace(/\*\*|\\(?=[$*_\[\]])/g, "").replace(/^\t+/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+  if (/<b>Question:<\/b>/.test(body)) return { props, ...parseBookLayout(body) };
   const qm = body.match(/##\s*Question\s*\n([\s\S]*?)(?=<details>|\n---|$)/);
   const am = body.match(/<details>([\s\S]*?)<\/details>/);
   return { props, question: qm ? strip(qm[1]) : "", answer: am ? strip(am[1]).replace(/^▸?\s*Doctrine & Model Answer[^\n]*\n?/, "") : "" };
+}
+
+// Pages imported from a review book (QuAMTO): "<b>Label:</b> text" sections. The answer is kept word for word.
+function parseBookLayout(body) {
+  const text = t => t.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/\n{3,}/g, "\n\n").trim();
+  const parts = [];
+  body.replace(/<b>([^<]+?):<\/b>([\s\S]*?)(?=<b>[^<]+?:<\/b>|$)/g, (_, label, t) => { parts.push([label.trim(), text(t)]); return ""; });
+  const get = re => parts.filter(([l]) => re.test(l));
+  const answers = get(/^Suggested Answer/i).map(([l, t]) => (/alternative/i.test(l) ? "ALTERNATIVE ANSWER:\n\n" : "SUGGESTED ANSWER:\n\n") + t);
+  const keyLine = get(/^Answer Key$/i)[0];
+  return {
+    question: (get(/^Question$/i)[0] || [])[1] || "",
+    answer: [keyLine ? "Answer key: " + keyLine[1] : "", ...answers].filter(Boolean).join("\n\n"),
+    book: (get(/^Suggested Answer/i)[0]?.[0].match(/\(([^,)]+)/) || [])[1] || "",
+    notes: [...get(/^Currency note$/i), ...get(/^Provenance/i)].map(([l, t]) => `${l}: ${t}`),
+  };
 }
 
 async function notionQuestions(id) {
   await mcpReady;
   if (!mcp) throw { code: "no_mcp" };
   const want = NOTION.subjects[id], okStatus = S.includeReview ? ["Verified", "Needs Review"] : ["Verified"];
+  const topic = TOPICS[S.topic]?.subject === id ? TOPICS[S.topic] : null;
   const hits = new Map();
-  for (const subjectName of want) {
-    const r = await mcp.callTool(NOTION.server, "notion-search", { query: subjectName, data_source_url: NOTION.ds, page_size: 25, max_highlight_length: 0 });
+  for (const query of topic ? topic.queries : want) {
+    const r = await mcp.callTool(NOTION.server, "notion-search", { query, data_source_url: NOTION.ds, page_size: 25, max_highlight_length: 0 });
     for (const h of r?.payload?.results || []) if (h.type === "page" && !hits.has(h.id)) hits.set(h.id, h);
   }
   const ids = [...hits.keys()].sort(() => Math.random() - .5);
@@ -1775,14 +1804,21 @@ async function notionQuestions(id) {
       mcp.callTool(NOTION.server, "notion-fetch", { id: pid }, { cache: { staleTime: 60000 } }).then(r => r.payload).catch(() => null)));
     for (const p of pages) {
       if (!p || picked.length >= S.count) continue;
-      const { props, question, answer } = parseNotionPage(p);
-      if (!want.includes(props.Subject) || !okStatus.includes(props.Status) || question.length < 40 || !answer) continue;
+      const { props, question, answer, book, notes } = parseNotionPage(p);
+      // A review-book row keeps the book's own answer, so "Needs Review" rows are allowed in a topic drill.
+      const bookRow = topic && props["Source Book"] === topic.book && props.Status === "Needs Review";
+      if (!want.includes(props.Subject) || !(okStatus.includes(props.Status) || bookRow) || question.length < 40 || !answer) continue;
       if (S.track !== "all" && props.Track !== S.track) continue;
-      picked.push({ q: question, key: answer, kw: props.Question || p.title, src: { title: props.Question || p.title || "Notion question", url: props.url || p.url, status: props.Status, track: props.Track } });
+      if (topic && !topic.part.test(props["Sub-topic"] || "")) continue;
+      const q = { q: question, key: answer, kw: props.Question || p.title, src: { title: props.Question || p.title || "Notion question", url: props.url || p.url, status: props.Status, track: props.Track } };
+      if (book) Object.assign(q, { keyLabel: `${book} suggested answer`, origin: [props["Source Case"], props["Sub-topic"]].filter(Boolean).join(" · "), caseNote: notes.join("\n") });
+      picked.push(q);
     }
   }
-  if (!picked.length) throw { code: "empty", message: `No ${okStatus.join(" or ")} ${want.join(" / ")} questions${S.track !== "all" ? ` on ${TRACKS[S.track]}` : ""} were found in your Notion repository. Using the built-in set.` };
-  const fill = BANK[id].slice(0, Math.max(0, S.count - picked.length));
+  if (!picked.length) throw { code: "empty", message: `No ${okStatus.join(" or ")} ${want.join(" / ")} questions${S.track !== "all" ? ` on ${TRACKS[S.track]}` : ""}${topic ? ` for ${topic.label}` : ""} were found in your Notion repository. Using the built-in set.` };
+  // A topic drill never pads with built-in questions from other topics.
+  const fill = topic ? [] : BANK[id].slice(0, Math.max(0, S.count - picked.length));
+  if (topic && picked.length < S.count) sourceNote = `Found ${picked.length} ${topic.label} question${picked.length > 1 ? "s" : ""} in your repository.`;
   if (fill.length) sourceNote = `Found ${picked.length} usable Notion question${picked.length > 1 ? "s" : ""} for this subject; ${fill.length} built-in question${fill.length > 1 ? "s" : ""} fill the rest.`;
   const all = [...picked, ...fill.map(q => ({ q: q.q, key: q.key, cases: q.cases, kw: q.kw }))];
   const base = Math.floor(100 / all.length), extra = 100 - base * all.length;
@@ -1870,7 +1906,7 @@ async function logSession(R) {
   if (!sm.idx.length) return;
   R.session = { status: "saving" }; save(); if (S.report === R) render();
   const when = new Date();
-  const rec = { subject: R.subject, mode: R.mode || "bar", date: when.toISOString(), graded: sm.idx.length, inSet: sm.inSet,
+  const rec = { subject: R.subject, ...(R.topic ? { topic: R.topic } : {}), mode: R.mode || "bar", date: when.toISOString(), graded: sm.idx.length, inSet: sm.inSet,
     score: sm.score, max: sm.max, pct: Math.round(sm.pct * 1000) / 1000, minutes: Math.round((R.usedMs || 0) / 60000) };
   try { const ref = await sessionsRef(); if (ref) await ref.add(rec); else S.history.push(rec); }
   catch { S.history.push(rec); }
@@ -1882,7 +1918,7 @@ async function logSession(R) {
       for (let t = 0; t < 40 && sm.idx.some(i => R.grades[i].notion === "pending"); t++) await new Promise(r => setTimeout(r, 500));
       const answers = sm.idx.map(i => R.grades[i].notion).filter(u => typeof u === "string" && u.startsWith("http")).map(u => u.replace(/\?.*$/, ""));
       const props = {
-        Session: `${subj(R.subject).name} · ${rec.mode === "review" ? "Review" : "Bar simulation"} · ${ymd(when)}`,
+        Session: `${subj(R.subject).name}${R.topic ? " · " + TOPICS[R.topic].label.replace(/^[^·]*·\s*/, "") : ""} · ${rec.mode === "review" ? "Review" : "Bar simulation"} · ${ymd(when)}`,
         "date:Date:start": ymd(when), "date:Date:is_datetime": 0,
         Subject: PERF.subject[R.subject], Mode: rec.mode === "review" ? "Review" : "Bar simulation",
         "Questions Graded": rec.graded, "Questions in Set": rec.inSet, Score: rec.score, "Max Score": rec.max, "Score %": rec.pct,
@@ -1947,7 +1983,7 @@ async function renderProgress() {
     }).join("")}
   </div>
   ${list.length ? `<section style="margin-top:24px"><h2>All sessions</h2><div class="tablewrap"><table class="sessions"><thead><tr><th>Date</th><th>Subject</th><th>Mode</th><th>Graded</th><th>Score</th><th>%</th></tr></thead><tbody>
-    ${[...list].reverse().map(r => `<tr><td>${esc(new Date(r.date).toLocaleString())}</td><td>${esc(subj(r.subject)?.name || r.subject)}</td><td>${r.mode === "review" ? "Review" : "Bar simulation"}</td><td>${r.graded} / ${r.inSet}</td><td>${r.score} / ${r.max}</td><td><span class="pill ${r.pct >= PASS / 100 ? "good" : "bad"}">${pct(r.pct)}</span></td></tr>`).join("")}
+    ${[...list].reverse().map(r => `<tr><td>${esc(new Date(r.date).toLocaleString())}</td><td>${esc(subj(r.subject)?.name || r.subject)}${r.topic && TOPICS[r.topic] ? `<br><span class="small muted">${esc(TOPICS[r.topic].label.replace(/^[^·]*·\s*/, ""))}</span>` : ""}</td><td>${r.mode === "review" ? "Review" : "Bar simulation"}</td><td>${r.graded} / ${r.inSet}</td><td>${r.score} / ${r.max}</td><td><span class="pill ${r.pct >= PASS / 100 ? "good" : "bad"}">${pct(r.pct)}</span></td></tr>`).join("")}
   </tbody></table></div></section>` : ""}`;
   $("#back").onclick = () => { S.view = "board"; save(); render(); };
 }
@@ -1985,7 +2021,7 @@ async function gradeAnswer(q, a, subjectName) {
   const prompt = `You are an examiner for the Philippine Bar Examinations, subject: ${subjectName}. Grade the examinee's answer against the REFERENCE ANSWER only.
 
 Rules:
-- The REFERENCE ANSWER (from ${q.src ? "the examinee's own verified question bank" : "a published suggested answer"}) is the sole source of law for this grading. Treat it as correct.
+- The REFERENCE ANSWER (from ${q.src && !q.keyLabel ? "the examinee's own verified question bank" : "a published suggested answer"}) is the sole source of law for this grading. Treat it as correct.
 - Do not state, add, or suggest any provision, article, section, rule, statute, doctrine, or case that does not appear in the REFERENCE ANSWER. If the examinee cites law not in the REFERENCE ANSWER, do not credit or discuss it; grade only what matches the reference.
 - Do not write your own model or suggested answer.
 - Credit the correct conclusion, the legal basis named in the REFERENCE ANSWER, and sound application to the facts. A correct conclusion with no legal basis earns little. Where the reference gives alternative answers, credit an answer that tracks any one of them.
