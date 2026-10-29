@@ -317,6 +317,9 @@ function setPrompt(i) {
 
 /* ---------- recording ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+// Inside Claude the page runs in a sandboxed frame with no microphone, so skip speech recognition there
+const FRAMED = (() => { try { return window.self !== window.top; } catch { return true; } })();
+const DICTATE = "Tap the transcript box below and press the microphone key on your keyboard to dictate. The clock keeps running while you speak.";
 function micNote(msg) { $("micNote").hidden = !msg; $("micNote").textContent = msg || ""; }
 
 function startRec() {
@@ -326,11 +329,15 @@ function startRec() {
   $("recBtn").classList.add("on"); $("recBtn").setAttribute("aria-label", "Stop speaking");
   $("recState").textContent = "Speaking… press again to stop.";
   S.timer = setInterval(tick, 250);
-  if (SR && !S.srBlocked) {
+  if (SR && !S.srBlocked && !FRAMED) {
+    let heard = false;
+    setTimeout(() => { if (S.recording && !heard && !S.srBlocked) micNote("No sound is reaching the page yet. Check that this site may use the microphone. If it still hears nothing: " + DICTATE); }, 5000);
     try {
       const r = new SR();
       r.continuous = true; r.interimResults = true; r.lang = "en-US";
+      r.onaudiostart = () => { heard = true; micNote(""); };
       r.onresult = e => {
+        heard = true;
         let interim = "";
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const t = e.results[i][0].transcript;
@@ -339,17 +346,16 @@ function startRec() {
         $("transcript").value = S.base + S.finalText + interim;
       };
       r.onerror = e => {
-        if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") {
-          S.srBlocked = true;
-          micNote("The microphone is blocked here. The clock is still running: tap the transcript box and use your keyboard's dictation key, or open this page in Chrome or Safari.");
-          $("transcript").focus();
-        }
+        if (e.error === "no-speech" || e.error === "aborted") return;
+        S.srBlocked = true;
+        micNote((e.error === "not-allowed" || e.error === "service-not-allowed" ? "The microphone permission was refused. " : "Speech recognition failed (" + e.error + "). ") + DICTATE);
+        $("transcript").focus();
       };
       r.onend = () => { if (S.recording && !S.srBlocked) { try { r.start(); } catch {} } };
       r.start(); S.rec = r;
     } catch { S.srBlocked = true; }
   } else {
-    micNote(SR ? "" : "This browser has no built-in speech recognition. The clock is running: use your keyboard's dictation key in the transcript box, or type.");
+    micNote((FRAMED ? "Claude's page viewer does not let pages use the microphone. " : SR ? "" : "This browser has no built-in speech recognition. ") + DICTATE + (FRAMED ? " For live recording, open the GitHub Pages version in Chrome or Safari." : ""));
     $("transcript").focus();
   }
 }
@@ -567,6 +573,7 @@ $("apiKey").value = apiKey();
 $("saveKey").onclick = () => { try { localStorage.setItem(STORE + ".key", $("apiKey").value.trim()); } catch {} $("saveKey").textContent = "Saved"; updateAIStatus(); };
 
 initPrompt(); tick();
+if (FRAMED) micNote("Recording here works through your keyboard's dictation: press the red button, then " + DICTATE.charAt(0).toLowerCase() + DICTATE.slice(1));
 EXAMPLE.metrics = analyzeLocal(EXAMPLE.transcript, EXAMPLE.dur);
 EXAMPLE.limit = 60;
 renderReport(store.history[0] || EXAMPLE);
