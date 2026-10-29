@@ -1,0 +1,576 @@
+<title>Rostrum Speaking Coach</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a lectern on the left (prompt → record → transcript), the coach's report on the right; stacks on phones */
+:root {
+  --bg: #eef0f4; --surface: #ffffff; --ink: #151a24; --muted: #5b6474; --rule: #d5dae3; --soft: #f5f6f9;
+  --accent: #1f3fa8; --accent-ink: #ffffff; --brass: #a2741c; --rec: #c2302f;
+  --good: #1d7a4c; --warn: #a3620a; --bad: #b42323;
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1118; --surface: #151b26; --ink: #e6e9ef; --muted: #98a2b3; --rule: #283141; --soft: #1a2130;
+  --accent: #8ea6ff; --accent-ink: #0d1325; --brass: #d8ad55; --rec: #f06a68;
+  --good: #4cc08a; --warn: #e3a344; --bad: #f07272; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1118; --surface: #151b26; --ink: #e6e9ef; --muted: #98a2b3; --rule: #283141; --soft: #1a2130;
+  --accent: #8ea6ff; --accent-ink: #0d1325; --brass: #d8ad55; --rec: #f06a68;
+  --good: #4cc08a; --warn: #e3a344; --bad: #f07272; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 56px }
+.wrap { max-width: 1120px; margin: 0 auto }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; margin: 0; line-height: 1.2; text-wrap: balance }
+h1 { font-size: clamp(1.8rem, 4vw, 2.5rem) }
+h2 { font-size: 1.3rem }
+h3 { font-size: 1.02rem; font-family: var(--f-body); font-weight: 600 }
+p { margin: 0 }
+.label { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600 }
+.muted { color: var(--muted) }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+button, select, input, textarea { font: inherit; color: var(--ink) }
+button { cursor: pointer; border-radius: 6px; border: 1px solid var(--rule); background: var(--surface); padding: 8px 14px; font-weight: 600 }
+button:hover { border-color: var(--muted) }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+button:disabled { opacity: .5; cursor: not-allowed }
+button.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600 }
+:is(button, select, input, textarea, summary):focus-visible { outline: 2px solid var(--brass); outline-offset: 2px }
+select, input { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px }
+
+.mast { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px 24px; padding-block: 28px 18px; border-bottom: 1px solid var(--rule); margin-bottom: 22px }
+.mast p { max-width: 58ch }
+.ai-status { font-size: .8rem; display: flex; align-items: center; gap: 8px }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted) }
+.dot.on { background: var(--good) }
+
+.layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 22px; align-items: start }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr) } }
+.col { display: flex; flex-direction: column; gap: 18px; min-width: 0 }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+
+/* Prompt card */
+.controls { display: flex; flex-wrap: wrap; gap: 12px }
+.controls label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; font-weight: 600; flex: 1 1 140px }
+.prompt { font-family: var(--f-display); font-size: 1.35rem; line-height: 1.35; font-weight: 500; text-wrap: pretty }
+.prompt-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap }
+
+/* Lectern */
+.lectern { display: flex; align-items: center; gap: 18px; flex-wrap: wrap }
+.rec { width: 76px; height: 76px; border-radius: 50%; border: 2px solid var(--rec); background: var(--surface); display: grid; place-items: center; padding: 0; flex: none }
+.rec span { width: 30px; height: 30px; border-radius: 50%; background: var(--rec); transition: border-radius .15s, transform .15s }
+.rec.on span { border-radius: 5px; transform: scale(.8) }
+.rec.on { box-shadow: 0 0 0 6px color-mix(in srgb, var(--rec) 18%, transparent) }
+.clock { display: flex; flex-direction: column; gap: 6px; flex: 1 1 160px; min-width: 0 }
+.clock .time { font-family: var(--f-mono); font-size: 1.9rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1 }
+.track { height: 6px; border-radius: 3px; background: var(--soft); border: 1px solid var(--rule); overflow: hidden }
+.track i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s linear }
+.track.over i { background: var(--rec) }
+.note { font-size: .83rem; color: var(--muted); background: var(--soft); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px }
+textarea { width: 100%; min-height: 170px; resize: vertical; background: var(--soft); border: 1px solid var(--rule); border-radius: 6px; padding: 12px; line-height: 1.6 }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center }
+.row .grow { flex: 1 }
+.dur { display: flex; align-items: center; gap: 6px; font-size: .85rem }
+.dur input { width: 80px }
+.err { color: var(--bad); font-size: .85rem }
+
+/* Report */
+.report-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; flex-wrap: wrap }
+.badge { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--brass); color: var(--brass) }
+.overall { display: flex; align-items: baseline; gap: 6px }
+.overall b { font-family: var(--f-display); font-size: 2.6rem; line-height: 1 }
+.verdict { font-family: var(--f-display); font-style: italic; font-size: 1.1rem }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px }
+.metric { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.metric b { font-family: var(--f-mono); font-size: 1.25rem; font-variant-numeric: tabular-nums }
+.metric small { font-size: .75rem; color: var(--muted) }
+.metric.good b { color: var(--good) } .metric.warn b { color: var(--warn) } .metric.bad b { color: var(--bad) }
+.pillars { display: grid; gap: 9px }
+.pillar { display: grid; grid-template-columns: 110px minmax(0, 1fr) 40px; gap: 10px; align-items: center; font-size: .88rem }
+.pillar .bar { height: 10px; border-radius: 5px; background: var(--soft); border: 1px solid var(--rule); overflow: hidden }
+.pillar .bar i { display: block; height: 100%; background: var(--accent) }
+.pillar.low .bar i { background: var(--warn) }
+.pillar .mono { text-align: right }
+ul.plain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px }
+.fix { border-left: 3px solid var(--warn); padding-left: 12px; display: flex; flex-direction: column; gap: 3px }
+.fix q { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--bad) 60%, transparent) }
+.fix .better { font-weight: 600 }
+.fix .better::before { content: "→ "; color: var(--good) }
+blockquote { margin: 0; padding: 14px 16px; background: var(--soft); border-radius: 6px; font-family: var(--f-display); font-size: 1.08rem; line-height: 1.55 }
+.table-wrap { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: .88rem }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule); vertical-align: top }
+th { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font-size: .78rem; padding: 2px 8px; border-radius: 99px; background: var(--soft); border: 1px solid var(--rule) }
+.drill { border: 1px dashed var(--brass); border-radius: 6px; padding: 12px 14px }
+.history li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding-bottom: 10px; border-bottom: 1px solid var(--rule) }
+.history li:last-child { border-bottom: 0; padding-bottom: 0 }
+.history .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+details summary { cursor: pointer; font-weight: 600; font-size: .88rem }
+details[open] summary { margin-bottom: 10px }
+.loading { display: flex; align-items: center; gap: 10px; color: var(--muted) }
+.spin { width: 16px; height: 16px; border: 2px solid var(--rule); border-top-color: var(--accent); border-radius: 50%; animation: s 0.8s linear infinite }
+@keyframes s { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none } .track i, .rec span { transition: none } }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <div class="label">Articulation practice</div>
+      <h1>Rostrum</h1>
+      <p class="muted">Take a prompt, speak against the clock, and get a coach's report on six pillars: organization, precision, conciseness, eloquence, relevance and confidence.</p>
+    </div>
+    <div class="ai-status"><span class="dot" id="aiDot"></span><span id="aiText">Checking for the coach…</span></div>
+  </header>
+
+  <div class="layout">
+    <div class="col">
+      <section class="panel" aria-labelledby="promptH">
+        <h2 id="promptH">The prompt</h2>
+        <div class="controls">
+          <label for="cat">Track
+            <select id="cat"></select>
+          </label>
+          <label for="limit">Time limit
+            <select id="limit">
+              <option value="30">30 seconds</option>
+              <option value="60">1 minute</option>
+              <option value="90" selected>90 seconds</option>
+              <option value="120">2 minutes</option>
+              <option value="180">3 minutes</option>
+            </select>
+          </label>
+        </div>
+        <p class="prompt" id="prompt"></p>
+        <div class="prompt-foot">
+          <span class="muted" style="font-size:.83rem" id="promptHint"></span>
+          <button id="nextPrompt" type="button">New prompt</button>
+        </div>
+        <details>
+          <summary>Write your own prompt</summary>
+          <div class="row">
+            <input id="customPrompt" class="grow" placeholder="e.g. Explain res judicata to a client">
+            <button id="useCustom" type="button">Use it</button>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="speakH">
+        <h2 id="speakH">Speak</h2>
+        <div class="lectern">
+          <button class="rec" id="recBtn" type="button" aria-label="Start speaking"><span></span></button>
+          <div class="clock">
+            <div class="time" id="time">0:00</div>
+            <div class="track" id="track"><i id="trackFill"></i></div>
+            <div class="muted" style="font-size:.8rem" id="recState">Press to start. Take a breath first.</div>
+          </div>
+        </div>
+        <p class="note" id="micNote" hidden></p>
+        <label class="label" for="transcript">Transcript <span style="text-transform:none;letter-spacing:0;font-weight:400">· edit anything the speech engine misheard</span></label>
+        <textarea id="transcript" placeholder="Your words appear here as you speak. You can also use your keyboard's dictation key, or type."></textarea>
+        <div class="row">
+          <label class="dur" for="dur">Speaking time <input id="dur" type="number" min="5" step="1" inputmode="numeric"> s</label>
+          <span class="grow"></span>
+          <button id="clearBtn" type="button">Clear</button>
+          <button id="analyzeBtn" class="primary" type="button">Get feedback</button>
+        </div>
+        <p class="err" id="err" hidden></p>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" id="report" aria-labelledby="reportH" aria-live="polite"></section>
+
+      <section class="panel" aria-labelledby="histH">
+        <div class="report-head">
+          <h2 id="histH">Your sessions</h2>
+          <button class="link" id="clearHist" type="button" hidden>Clear history</button>
+        </div>
+        <ul class="plain history" id="history"></ul>
+      </section>
+
+      <details class="panel" id="settings">
+        <summary>Using Rostrum outside Claude</summary>
+        <p class="muted" style="font-size:.88rem">Inside Claude the coach runs on your Claude account. If you open this file directly in Chrome, Edge or Safari, the microphone works, and you can add an Anthropic API key for the coaching. The key stays in this browser only.</p>
+        <div class="row">
+          <input id="apiKey" class="grow" type="password" placeholder="sk-ant-…" autocomplete="off">
+          <button id="saveKey" type="button">Save key</button>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROMPTS = {
+  "Bar & law": [
+    "Explain the doctrine of piercing the corporate veil to a client who owns a small family corporation.",
+    "Distinguish a void marriage from a voidable one, and give one ground for each under the Family Code.",
+    "Explain to a layperson why evidence from an illegal search cannot be used against the accused.",
+    "Argue for the accused: the warrantless arrest was invalid because no crime was committed in the officer's presence.",
+    "When does the right to counsel attach, and why does the Constitution guard it so closely?",
+    "Explain to a jeepney operator the difference between a contract of carriage and a quasi-delict.",
+    "Your client asks whether a verbal sale of land is binding. Answer them.",
+    "Explain due process in administrative cases, as you would to a newly hired HR officer."
+  ],
+  "Interview": [
+    "Tell me about yourself.",
+    "Why do you want to become a lawyer?",
+    "Describe a time you disagreed with someone senior to you. What did you do?",
+    "What is your greatest weakness, and what are you doing about it?",
+    "Where do you see yourself five years after passing the Bar?",
+    "Tell me about a failure and what it taught you."
+  ],
+  "Impromptu": [
+    "Is it better to be respected or to be liked? Take a side.",
+    "Describe the most useful habit you have built, and how you built it.",
+    "Should students be allowed to use AI in their studies? Defend your view.",
+    "What is one law you would change tomorrow, and why?",
+    "Describe a place that shaped who you are.",
+    "Argue that silence is sometimes the strongest answer."
+  ],
+  "Explain simply": [
+    "Explain how inflation works to a twelve-year-old.",
+    "Explain what a contract is to someone who has never signed one.",
+    "Explain why the sky is blue, in under a minute.",
+    "Explain how an election turns votes into power.",
+    "Explain compound interest to a first-time saver."
+  ],
+  "Persuade": [
+    "Convince your barangay council to fund a free legal-aid desk.",
+    "Persuade a sceptical friend to start studying three months earlier.",
+    "Convince a hiring partner that you deserve the last slot in the firm.",
+    "Persuade your classmates to form a weekly recitation group."
+  ]
+};
+const HINTS = {
+  "Bar & law": "Lead with the answer, state the legal basis, then apply it.",
+  "Interview": "Point, proof, close. Keep the story short.",
+  "Impromptu": "Pick a side in the first sentence.",
+  "Explain simply": "One idea, one example, no jargon.",
+  "Persuade": "Name the benefit to them, then ask for the decision."
+};
+const PILLARS = [
+  ["organization", "Organization"], ["precision", "Precision"], ["conciseness", "Conciseness"],
+  ["eloquence", "Eloquence"], ["relevance", "Relevance"], ["confidence", "Confidence"]
+];
+const FILLERS = ["um", "umm", "uh", "uhm", "er", "ah", "erm", "you know", "i mean", "basically", "actually", "literally", "sort of", "kind of", "like", "okay so", "so yeah", "right"];
+const HEDGES = ["i think", "i guess", "i feel like", "maybe", "probably", "perhaps", "i believe", "just", "a little bit", "hopefully", "i'm not sure"];
+const STOP = new Set("a an the and or but if then so of to in on at by for with from as is are was were be been being it its this that these those i you he she we they me my your our their his her them us not no do does did have has had will would can could should may might must there here what which who whom whose when where why how all any some such than too very also into about over under again out up down off just don't it's i'm you're can't won't".split(" "));
+const STORE = "rostrum.v1";
+
+const EXAMPLE = {
+  example: true,
+  cat: "Bar & law",
+  prompt: "Explain the doctrine of piercing the corporate veil to a client who owns a small family corporation.",
+  limit: 90, dur: 38,
+  transcript: "Um so basically the corporation is like a separate person from you. So if the company owes money you usually don't have to pay it yourself. But I think the court can sort of ignore that if you use the company to commit fraud or to avoid an obligation, or if the company is really just you, like you don't keep separate books. Then they pierce the veil and you become personally liable. So basically keep your records separate and don't use it to dodge debts.",
+  coach: {
+    scores: { organization: 6, precision: 5, conciseness: 6, eloquence: 5, relevance: 8, confidence: 5 },
+    verdict: "You know the doctrine, but fillers and hedges make you sound less sure than you are.",
+    strengths: ["You named all three classic grounds: fraud, evasion of an existing obligation, and the alter-ego case.", "You ended with practical advice the client can act on."],
+    fixes: [
+      { quote: "Um so basically the corporation is like a separate person", issue: "Two fillers and a hedge before your first idea.", better: "A corporation has a personality separate and distinct from yours." },
+      { quote: "I think the court can sort of ignore that", issue: "Hedging on settled law weakens your authority.", better: "The court will disregard that separate personality when…" },
+      { quote: "the company is really just you", issue: "Vague. Name the doctrine.", better: "…when the corporation is merely your alter ego or business conduit." }
+    ],
+    polished: "Your corporation is a person in the eyes of the law, separate from you; that is the rule under Section 2 of the Revised Corporation Code. So its debts are, as a rule, its own. But the courts will pierce that veil in three cases: when the corporation is used to defeat public convenience or evade an existing obligation, when it is used to commit fraud, and when it is merely your alter ego. Keep separate books, observe corporate formalities, and never use the company to dodge a debt, and the veil will hold.",
+    vocabulary: [
+      { plain: "ignore", latinate: "disregard", anglo: "set aside", note: "The Court's own word is 'disregard the separate personality'." },
+      { plain: "dodge", latinate: "evade", anglo: "shirk", note: "'Evade an existing obligation' is the doctrinal phrase." },
+      { plain: "really just you", latinate: "alter ego", anglo: "a mere tool", note: "Use the term of art, then gloss it for a layperson." }
+    ],
+    drill: "Answer again in 60 seconds. Open with the rule, cite the statute in your second sentence, and allow yourself zero uses of 'so' or 'basically'."
+  }
+};
+
+const $ = id => document.getElementById(id);
+const S = { cat: "Bar & law", idx: 0, prompt: "", limit: 90, recording: false, start: 0, elapsed: 0, timer: null, rec: null, srBlocked: false, finalText: "", base: "" };
+let sample = null, store = load();
+
+function load() { try { return JSON.parse(localStorage.getItem(STORE)) || { history: [] }; } catch { return { history: [] }; } }
+function save() { try { localStorage.setItem(STORE, JSON.stringify(store)); } catch {} }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function fmt(sec) { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
+
+/* ---------- prompt ---------- */
+function initPrompt() {
+  $("cat").innerHTML = Object.keys(PROMPTS).map(c => `<option>${esc(c)}</option>`).join("");
+  $("cat").value = S.cat;
+  setPrompt(0);
+  $("cat").onchange = () => { S.cat = $("cat").value; setPrompt(Math.floor(Math.random() * PROMPTS[S.cat].length)); };
+  $("limit").onchange = () => { S.limit = +$("limit").value; tick(); };
+  $("nextPrompt").onclick = () => { const n = PROMPTS[S.cat].length; setPrompt((S.idx + 1 + Math.floor(Math.random() * (n - 1))) % n); };
+  $("useCustom").onclick = () => { const v = $("customPrompt").value.trim(); if (v) { S.prompt = v; $("prompt").textContent = v; $("promptHint").textContent = "Your own prompt."; } };
+}
+function setPrompt(i) {
+  S.idx = i; S.prompt = PROMPTS[S.cat][i];
+  $("prompt").textContent = S.prompt;
+  $("promptHint").textContent = HINTS[S.cat];
+}
+
+/* ---------- recording ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function micNote(msg) { $("micNote").hidden = !msg; $("micNote").textContent = msg || ""; }
+
+function startRec() {
+  S.recording = true; S.start = Date.now() - S.elapsed * 1000;
+  S.base = $("transcript").value ? $("transcript").value.replace(/\s*$/, " ") : "";
+  S.finalText = "";
+  $("recBtn").classList.add("on"); $("recBtn").setAttribute("aria-label", "Stop speaking");
+  $("recState").textContent = "Speaking… press again to stop.";
+  S.timer = setInterval(tick, 250);
+  if (SR && !S.srBlocked) {
+    try {
+      const r = new SR();
+      r.continuous = true; r.interimResults = true; r.lang = "en-US";
+      r.onresult = e => {
+        let interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) S.finalText += t.trim() + " "; else interim += t;
+        }
+        $("transcript").value = S.base + S.finalText + interim;
+      };
+      r.onerror = e => {
+        if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") {
+          S.srBlocked = true;
+          micNote("The microphone is blocked here. The clock is still running: tap the transcript box and use your keyboard's dictation key, or open this page in Chrome or Safari.");
+          $("transcript").focus();
+        }
+      };
+      r.onend = () => { if (S.recording && !S.srBlocked) { try { r.start(); } catch {} } };
+      r.start(); S.rec = r;
+    } catch { S.srBlocked = true; }
+  } else {
+    micNote(SR ? "" : "This browser has no built-in speech recognition. The clock is running: use your keyboard's dictation key in the transcript box, or type.");
+    $("transcript").focus();
+  }
+}
+function stopRec() {
+  S.recording = false; clearInterval(S.timer); tick();
+  if (S.rec) { try { S.rec.stop(); } catch {} S.rec = null; }
+  $("recBtn").classList.remove("on"); $("recBtn").setAttribute("aria-label", "Start speaking");
+  $("recState").textContent = S.elapsed ? "Stopped. Fix any misheard words, then get feedback." : "Press to start. Take a breath first.";
+  $("dur").value = Math.round(S.elapsed) || "";
+}
+function tick() {
+  if (S.recording) S.elapsed = (Date.now() - S.start) / 1000;
+  $("time").textContent = fmt(S.elapsed) + " / " + fmt(S.limit);
+  $("trackFill").style.width = Math.min(100, S.elapsed / S.limit * 100) + "%";
+  $("track").classList.toggle("over", S.elapsed > S.limit);
+  if (S.recording) $("dur").value = Math.round(S.elapsed);
+}
+
+/* ---------- local analysis ---------- */
+function countPhrases(lower, list) {
+  const hits = {};
+  let total = 0;
+  for (const p of list) {
+    const re = new RegExp("\\b" + p.replace(/[.*+?^${}()|[\]\\']/g, m => m === "'" ? "'" : "\\" + m) + "\\b", "g");
+    const n = (lower.match(re) || []).length;
+    if (n) { hits[p] = n; total += n; }
+  }
+  return { total, hits };
+}
+function analyzeLocal(text, dur) {
+  const words = text.match(/[A-Za-z][A-Za-z'’-]*/g) || [];
+  const lower = " " + text.toLowerCase().replace(/[’]/g, "'") + " ";
+  const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.split(/\s+/).length > 1);
+  const content = words.map(w => w.toLowerCase()).filter(w => w.length > 2 && !STOP.has(w));
+  const freq = {};
+  content.forEach(w => freq[w] = (freq[w] || 0) + 1);
+  const repeats = Object.entries(freq).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const fill = countPhrases(lower, FILLERS), hedge = countPhrases(lower, HEDGES);
+  const wc = words.length;
+  return {
+    words: wc,
+    wpm: dur > 0 ? Math.round(wc / (dur / 60)) : null,
+    fillers: fill.total, fillerHits: fill.hits,
+    hedges: hedge.total, hedgeHits: hedge.hits,
+    fillerRate: wc ? Math.round(fill.total / wc * 1000) / 10 : 0,
+    avgSentence: sentences.length ? Math.round(wc / sentences.length) : wc,
+    variety: content.length ? Math.round(new Set(content).size / content.length * 100) : 0,
+    repeats
+  };
+}
+
+/* ---------- coach ---------- */
+function coachPrompt(r) {
+  const m = r.metrics;
+  return `You are a demanding but warm speaking coach. Assess one spoken answer. It was transcribed from speech, so ignore punctuation and spelling slips caused by transcription.
+
+Track: ${r.cat}
+Prompt: ${r.prompt}
+Time limit: ${r.limit}s. Actual speaking time: ${r.dur}s.
+Measured: ${m.words} words, ${m.wpm ?? "unknown"} words per minute (130–160 is the conversational target), ${m.fillers} fillers ${JSON.stringify(m.fillerHits)}, ${m.hedges} hedges ${JSON.stringify(m.hedgeHits)}, average sentence ${m.avgSentence} words, word variety ${m.variety}%.
+
+Transcript:
+"""${r.transcript}"""
+
+Score each pillar from 1 to 10, and be strict: 8 is strong, 10 is rare.
+- organization: a clear structure (point, support, close) and signposting
+- precision: exact words and terms of art, no vagueness
+- conciseness: no padding, no repetition, fits the time limit
+- eloquence: varied, well-chosen vocabulary and good rhythm
+- relevance: answers the prompt actually asked
+- confidence: no hedging, fillers or apologies; assertive phrasing
+For legal prompts, judge legal accuracy under relevance and precision, and in the polished version cite the correct Philippine legal basis (statute, article, or doctrine) where it applies. Do not invent case names.
+
+Return JSON only, in this shape:
+{"scores":{"organization":0,"precision":0,"conciseness":0,"eloquence":0,"relevance":0,"confidence":0},
+"verdict":"one sentence, the main thing to fix",
+"strengths":["two short items"],
+"fixes":[{"quote":"exact words from the transcript","issue":"what is wrong, briefly","better":"what to say instead"}],
+"polished":"the answer as a strong speaker would say it, no longer than the original",
+"vocabulary":[{"plain":"a word or phrase the speaker used","latinate":"a precise Latin-derived alternative","anglo":"a plain Anglo-Saxon alternative","note":"when to use which"}],
+"drill":"one specific exercise for the next attempt"}
+Give 2 to 4 fixes and 3 to 5 vocabulary items. Write in plain, clear English and avoid idioms.`;
+}
+function parseJSON(t) {
+  const s = t.replace(/^[\s\S]*?```(?:json)?/i, m => m.includes("```") ? "" : m).replace(/```[\s\S]*$/, "");
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  return JSON.parse(s.slice(a, b + 1));
+}
+function apiKey() { try { return localStorage.getItem(STORE + ".key") || ""; } catch { return ""; } }
+async function getCoach(r) {
+  const prompt = coachPrompt(r);
+  if (sample) return await sample.json(prompt, { modelTier: "default" });
+  const key = apiKey();
+  if (!key) return null;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify({ model: "claude-sonnet-5-5", max_tokens: 2500, messages: [{ role: "user", content: prompt }] })
+  });
+  if (!res.ok) throw new Error("The API answered " + res.status + ". Check your key in the settings below.");
+  const data = await res.json();
+  return parseJSON(data.content.map(c => c.text || "").join(""));
+}
+function aiReady() { return !!(sample || apiKey()); }
+function updateAIStatus() {
+  const on = aiReady();
+  $("aiDot").classList.toggle("on", on);
+  $("aiText").textContent = sample ? "Coach ready (Claude)" : apiKey() ? "Coach ready (API key)" : "Coach offline: you will get measured stats only";
+}
+
+/* ---------- render ---------- */
+function band(v, good, warn) { return v == null ? "" : good(v) ? "good" : warn(v) ? "warn" : "bad"; }
+function metricsHTML(m, limit, dur) {
+  const cells = [
+    ["Pace", m.wpm == null ? "—" : m.wpm, "words / min · aim 130–160", band(m.wpm, v => v >= 125 && v <= 170, v => v >= 105 && v <= 190)],
+    ["Fillers", m.fillers, m.fillerRate + " per 100 words", band(m.fillerRate, v => v < 1.5, v => v < 4)],
+    ["Hedges", m.hedges, "I think, maybe, just…", band(m.hedges, v => v <= 1, v => v <= 3)],
+    ["Sentence", m.avgSentence, "avg words · aim 12–22", band(m.avgSentence, v => v >= 10 && v <= 24, v => v >= 7 && v <= 32)],
+    ["Variety", m.variety + "%", "distinct content words", band(m.variety, v => v >= 70, v => v >= 55)],
+    ["Time", fmt(dur), "of " + fmt(limit), band(dur / limit, v => v >= .6 && v <= 1.05, v => v >= .4 && v <= 1.2)]
+  ];
+  return `<div class="metrics">${cells.map(([l, v, s, c]) => `<div class="metric ${c}"><span class="label">${l}</span><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join("")}</div>`;
+}
+function overallOf(c) { const v = PILLARS.map(([k]) => +c.scores?.[k] || 0); return Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10); }
+
+function renderReport(r, loading, error) {
+  const m = r.metrics, c = r.coach;
+  const words = Object.entries({ ...m.fillerHits, ...m.hedgeHits }).sort((a, b) => b[1] - a[1]);
+  let h = `<div class="report-head">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+        <div class="row"><h2>Coach's report</h2>${r.example ? '<span class="badge">Example</span>' : ""}</div>
+        <p class="muted" style="font-size:.85rem">${esc(r.cat)} · ${esc(r.prompt)}</p>
+      </div>
+      ${c ? `<div class="overall"><b>${overallOf(c)}</b><span class="muted">/ 100</span></div>` : ""}
+    </div>`;
+  if (r.example) h += `<p class="note">This is a sample report on a sample answer. Speak your own and it will take its place.</p>`;
+  if (c?.verdict) h += `<p class="verdict">${esc(c.verdict)}</p>`;
+  h += metricsHTML(m, r.limit, r.dur);
+  if (words.length || m.repeats.length) {
+    h += `<div style="display:flex;flex-direction:column;gap:6px"><span class="label">Words to watch</span><div class="chips">${
+      words.map(([w, n]) => `<span class="chip">“${esc(w)}” ×${n}</span>`).join("") +
+      m.repeats.map(([w, n]) => `<span class="chip">repeated: ${esc(w)} ×${n}</span>`).join("")}</div></div>`;
+  }
+  if (loading) h += `<div class="loading"><span class="spin"></span>The coach is listening back to your answer…</div>`;
+  if (error) h += `<p class="err">${esc(error)}</p>`;
+  if (!c && !loading && !error && !aiReady()) h += `<p class="note">The coach is offline, so you have the measured stats only. Inside Claude the coach connects on its own; outside Claude, add an API key in the settings at the bottom.</p>`;
+  if (c) {
+    h += `<div style="display:flex;flex-direction:column;gap:10px"><h3>The six pillars</h3><div class="pillars">${
+      PILLARS.map(([k, l]) => { const v = Math.max(0, Math.min(10, +c.scores?.[k] || 0));
+        return `<div class="pillar ${v < 6 ? "low" : ""}"><span>${l}</span><span class="bar"><i style="width:${v * 10}%"></i></span><span class="mono">${v}/10</span></div>`; }).join("")}</div></div>`;
+    if (c.strengths?.length) h += `<div style="display:flex;flex-direction:column;gap:8px"><h3>What worked</h3><ul class="plain">${c.strengths.map(s => `<li>${esc(s)}</li>`).join("")}</ul></div>`;
+    if (c.fixes?.length) h += `<div style="display:flex;flex-direction:column;gap:8px"><h3>Line edits</h3><ul class="plain">${c.fixes.map(f => `<li class="fix"><q>${esc(f.quote)}</q><span class="muted" style="font-size:.85rem">${esc(f.issue)}</span><span class="better">${esc(f.better)}</span></li>`).join("")}</ul></div>`;
+    if (c.polished) h += `<div style="display:flex;flex-direction:column;gap:8px"><div class="report-head"><h3>Said well</h3><button class="link" type="button" id="copyPolished">Copy</button></div><blockquote id="polished">${esc(c.polished)}</blockquote></div>`;
+    if (c.vocabulary?.length) h += `<div style="display:flex;flex-direction:column;gap:8px"><h3>Word choice</h3><div class="table-wrap"><table><thead><tr><th>You said</th><th>Latinate</th><th>Anglo-Saxon</th><th>Use it when</th></tr></thead><tbody>${
+      c.vocabulary.map(v => `<tr><td>${esc(v.plain)}</td><td><b>${esc(v.latinate)}</b></td><td><b>${esc(v.anglo)}</b></td><td class="muted">${esc(v.note)}</td></tr>`).join("")}</tbody></table></div></div>`;
+    if (c.drill) h += `<div class="drill"><span class="label">Next attempt</span><p>${esc(c.drill)}</p></div>`;
+    h += `<div class="row"><button type="button" id="retry" class="primary">Try this prompt again</button></div>`;
+  }
+  $("report").innerHTML = h;
+  const cp = $("copyPolished");
+  if (cp) cp.onclick = () => navigator.clipboard.writeText(c.polished).then(() => cp.textContent = "Copied", () => { getSelection().selectAllChildren($("polished")); cp.textContent = "Selected"; });
+  const rt = $("retry");
+  if (rt) rt.onclick = () => { if (r.example) { S.cat = r.cat; $("cat").value = r.cat; S.prompt = r.prompt; $("prompt").textContent = r.prompt; $("promptHint").textContent = HINTS[r.cat]; } resetSpeech(); $("speakH").scrollIntoView({ behavior: "smooth", block: "start" }); };
+}
+
+function renderHistory() {
+  const list = store.history;
+  $("clearHist").hidden = !list.length;
+  if (!list.length) { $("history").innerHTML = `<li class="muted" style="display:block;border:0">No sessions yet. Each answer you get feedback on is kept here, in this browser, so you can watch your fillers fall and your scores rise.</li>`; return; }
+  $("history").innerHTML = list.slice(0, 15).map((r, i) => `<li>
+      <button class="link t" type="button" data-i="${i}" style="text-align:left">${esc(r.prompt)}</button>
+      <span class="mono">${r.coach ? overallOf(r.coach) : "—"}</span>
+      <span class="muted" style="font-size:.78rem">${new Date(r.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · ${esc(r.cat)} · ${r.metrics.wpm ?? "—"} wpm · ${r.metrics.fillers} fillers</span>
+    </li>`).join("");
+  $("history").querySelectorAll("button[data-i]").forEach(b => b.onclick = () => { renderReport(store.history[+b.dataset.i]); $("report").scrollIntoView({ behavior: "smooth", block: "start" }); });
+}
+
+/* ---------- flow ---------- */
+function resetSpeech() {
+  if (S.recording) stopRec();
+  S.elapsed = 0; $("transcript").value = ""; $("dur").value = ""; $("err").hidden = true; tick();
+  $("recState").textContent = "Press to start. Take a breath first.";
+}
+function showErr(msg) { $("err").hidden = !msg; $("err").textContent = msg || ""; }
+
+async function analyze() {
+  if (S.recording) stopRec();
+  const text = $("transcript").value.trim();
+  const dur = +$("dur").value || Math.round(S.elapsed);
+  if ((text.match(/\S+/g) || []).length < 15) return showErr("Say at least a few sentences (15 words or more) so there is something to coach.");
+  if (!dur) return showErr("Enter how many seconds you spoke, so pace can be measured.");
+  showErr("");
+  const r = { at: Date.now(), cat: S.cat, prompt: S.prompt, limit: S.limit, dur, transcript: text, metrics: analyzeLocal(text, dur), coach: null };
+  $("analyzeBtn").disabled = true;
+  renderReport(r, aiReady());
+  if (innerWidth < 860) $("report").scrollIntoView({ behavior: "smooth", block: "start" });
+  let error = null;
+  if (aiReady()) {
+    try { r.coach = await getCoach(r); }
+    catch (e) { error = e?.code === "rate_limited" ? "The coach is busy. Wait a minute and press Get feedback again." : e?.code === "not_granted" ? "The coach was not allowed to run. You have the measured stats only." : (e?.message || "The coach could not answer this time."); }
+  }
+  $("analyzeBtn").disabled = false;
+  renderReport(r, false, error);
+  store.history.unshift(r); store.history = store.history.slice(0, 40); save(); renderHistory();
+}
+
+$("recBtn").onclick = () => S.recording ? stopRec() : startRec();
+$("analyzeBtn").onclick = analyze;
+$("clearBtn").onclick = resetSpeech;
+$("clearHist").onclick = () => {
+  if ($("clearHist").dataset.armed) { store.history = []; save(); renderHistory(); delete $("clearHist").dataset.armed; $("clearHist").textContent = "Clear history"; }
+  else { $("clearHist").dataset.armed = "1"; $("clearHist").textContent = "Press again to clear"; }
+};
+$("apiKey").value = apiKey();
+$("saveKey").onclick = () => { try { localStorage.setItem(STORE + ".key", $("apiKey").value.trim()); } catch {} $("saveKey").textContent = "Saved"; updateAIStatus(); };
+
+initPrompt(); tick();
+EXAMPLE.metrics = analyzeLocal(EXAMPLE.transcript, EXAMPLE.dur);
+EXAMPLE.limit = 60;
+renderReport(store.history[0] || EXAMPLE);
+renderHistory();
+updateAIStatus();
+if (window.claude?.use) claude.use("sample").then(s => { sample = s; updateAIStatus(); }).catch(() => {});
+</script>
